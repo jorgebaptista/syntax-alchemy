@@ -34,3 +34,39 @@ setup.log
 
 # Local OPAM switch
 _opam/
+
+# Dune
+.dune/
+dune-project.lock
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.directory
+
+# Testing & Coverage
+*.coverage
+coverage/
+htmlcov/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Documentation build artifacts
+_site/
+.jekyll-cache/
+
+# Temporary files
+*.tmp
+*.temp

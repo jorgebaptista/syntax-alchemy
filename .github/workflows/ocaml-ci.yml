@@ -1,0 +1,87 @@
+name: OCaml CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'alchemy-*/**'
+      - '.github/workflows/ocaml-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'alchemy-*/**'
+
+jobs:
+  detect-projects:
+    name: Detect OCaml Projects
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Find OCaml projects
+        id: set-matrix
+        run: |
+          projects=$(find . -maxdepth 2 -name "dune-project" -exec dirname {} \; | sed 's|^\./||' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "matrix=$projects" >> $GITHUB_OUTPUT
+          echo "Found projects: $projects"
+
+  build-and-test:
+    name: Build & Test
+    needs: detect-projects
+    if: needs.detect-projects.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.detect-projects.outputs.matrix) }}
+        ocaml-version:
+          - 4.14.x
+          - 5.0.x
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-version }}
+          dune-cache: true
+      
+      - name: Install dependencies
+        working-directory: ${{ matrix.project }}
+        run: |
+          opam install . --deps-only --with-test --yes
+      
+      - name: Build
+        working-directory: ${{ matrix.project }}
+        run: |
+          opam exec -- dune build
+      
+      - name: Run tests
+        working-directory: ${{ matrix.project }}
+        run: |
+          opam exec -- dune test
+      
+      - name: Check formatting
+        working-directory: ${{ matrix.project }}
+        run: |
+          opam install ocamlformat --yes
+          opam exec -- dune build @fmt || echo "⚠️ Formatting check failed (non-blocking)"
+        continue-on-error: true
+
+  status-check:
+    name: OCaml CI Status
+    needs: build-and-test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check build status
+        run: |
+          if [ "${{ needs.build-and-test.result }}" == "success" ]; then
+            echo "✅ All OCaml projects built and tested successfully"
+          else
+            echo "❌ Some OCaml projects failed"
+            exit 1
+          fi

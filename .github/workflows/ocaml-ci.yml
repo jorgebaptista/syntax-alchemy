@@ -48,6 +48,7 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
           dune-cache: true
+          opam-depext: false
       
       - name: Install dependencies
         working-directory: ${{ matrix.project }}

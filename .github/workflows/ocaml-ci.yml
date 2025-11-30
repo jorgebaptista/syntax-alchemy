@@ -31,7 +31,7 @@ jobs:
     name: Build & Test
     needs: detect-projects
     if: needs.detect-projects.outputs.matrix != '[]'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -48,7 +48,6 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
           dune-cache: true
-          opam-disable-sandboxing: true
       
       - name: Install dependencies
         working-directory: ${{ matrix.project }}

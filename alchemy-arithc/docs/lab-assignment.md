@@ -254,7 +254,20 @@ Testar-se-á no final com o ficheiro [test.exp](./test.exp) (igualmente fornecid
 
 Para utilizar um poco menos de espaço na pilha, podemos melhorar um pouco o esquema de compilação para que o resultado de `compile_expr` se encontre no registo `%rax` no lugar do topo da pilha. Assim só os resultados das sub-expressões esquerdas precisam de serem empilhadas.
 
-[solução](COMING_SOON)
-
 ------
 
+Extra
+
+Implementações das  seguintes estruturas de dados na forma de bibliotecas (módulos, funtores):
+Vetores redimensionáveis
+Subconjuntos de inteiros na forma de bit-arrays
+Splay trees
+
+Um compilador completo para X86-64 tendo como ponto de partida a linguagem Arith do TD1.
+Juntar: 
+ - condicionais
+ - funções 
+ - vetores
+ - atribuições
+ - ciclos
+ - etc.

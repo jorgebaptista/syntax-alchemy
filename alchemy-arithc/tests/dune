@@ -2,11 +2,10 @@
  (alias runtest)
  (deps
   run_tests.sh
-  test.exp test.expected
-  test_step1.exp test_step1.expected
-  test_step2.exp test_step2.expected
-  test_step3.exp test_step3.expected
-  test_step4.exp test_step4.expected
-  (exe:arithc))
+ test.exp test.expected
+ test_step1.exp test_step1.expected
+ test_step2.exp test_step2.expected
+ test_step3.exp test_step3.expected
+  test_step4.exp test_step4.expected)
  (action
   (run bash %{dep:run_tests.sh} %{exe:arithc})))

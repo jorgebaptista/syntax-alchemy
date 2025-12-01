@@ -71,9 +71,8 @@ jobs:
       - name: Check formatting
         working-directory: ${{ matrix.project }}
         run: |
-          opam install ocamlformat --yes
-          opam exec -- dune build @fmt || echo "⚠️ Formatting check failed (non-blocking)"
-        continue-on-error: true
+          opam install ocamlformat.0.26.0 --yes
+          opam exec -- dune build @fmt
 
   status-check:
     name: OCaml CI Status

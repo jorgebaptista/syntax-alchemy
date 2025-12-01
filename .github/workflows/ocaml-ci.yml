@@ -49,6 +49,10 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-version }}
           dune-cache: true
       
+      - name: Install build tools
+        run: |
+          opam install menhir --yes
+      
       - name: Install dependencies
         working-directory: ${{ matrix.project }}
         run: |

@@ -1,0 +1,2 @@
+print (let x = 3 in x * x)
+print (let x = 3 in (let y = x + x in x * y) + (let z = x + 3 in z / z))

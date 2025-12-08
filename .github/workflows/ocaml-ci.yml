@@ -31,7 +31,7 @@ jobs:
     name: Build & Test
     needs: detect-projects
     if: needs.detect-projects.outputs.matrix != '[]'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -48,6 +48,10 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
           dune-cache: true
+      
+      - name: Install build tools
+        run: |
+          opam install menhir --yes
       
       - name: Install dependencies
         working-directory: ${{ matrix.project }}
@@ -67,9 +71,8 @@ jobs:
       - name: Check formatting
         working-directory: ${{ matrix.project }}
         run: |
-          opam install ocamlformat --yes
-          opam exec -- dune build @fmt || echo "⚠️ Formatting check failed (non-blocking)"
-        continue-on-error: true
+          opam install ocamlformat.0.26.0 --yes
+          opam exec -- dune build @fmt
 
   status-check:
     name: OCaml CI Status

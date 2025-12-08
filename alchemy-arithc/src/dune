@@ -1,0 +1,12 @@
+(ocamllex
+ (modules lexer))
+
+(menhir
+ (modules parser))
+
+(executable
+ (name arithc)
+ (modes byte)
+ (promote (until-clean))
+ (modules ast lexer parser x86_64 compile arithc)
+ (flags ()))

@@ -7,12 +7,30 @@ Simple compiler from Arith mini-language to x86-64 assembly.
 Takes programs like this:
 ```
 set x = 10
-print x * (x + 1) / 2
+if x > 5 then
+  print x * (x + 1) / 2
+else
+  print 0
+
+set i = 0
+while i < 5 do
+  print i
+  set i = i + 1
+done
 ```
 
 And compiles them to x86-64 assembly.
 
-**Features:** arithmetic (`+`, `-`, `*`, `/`), global variables (`set`), local variables (`let`), printing (`print`)
+**Features:**
+- Arithmetic (`+`, `-`, `*`, `/`)
+- Booleans (`true`, `false`)
+- Comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`)
+- Logical operators (`and`, `or`, `not`) with short-circuit evaluation
+- Global variables (`set`)
+- Local variables (`let...in`)
+- Conditionals (`if...then...else`)
+- Loops (`while...do...done`)
+- Print (`print`)
 
 ## Structure
 
@@ -55,9 +73,23 @@ Expected output: `60, 50, 0, 10, 55, 60, 20, 43`
 ## Language syntax
 
 ```
-set x = expr       # global variable
-print expr         # print result
-let x = e1 in e2   # local variable
+# Variables
+set x = expr                    # global variable
+let x = e1 in e2                # local variable (in expressions)
+
+# Output
+print expr                      # print result
+
+# Control flow
+if cond then stmt else stmt     # conditional
+if cond then e1 else e2         # conditional expression
+while cond do stmts done        # loop
+
+# Operators
++ - * /                         # arithmetic
+== != < <= > >=                 # comparison
+and or not                      # logical (short-circuit)
+true false                      # boolean literals
 ```
 
 Operators: `+`, `-`, `*`, `/`, parentheses

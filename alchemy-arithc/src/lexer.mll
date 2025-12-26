@@ -7,14 +7,30 @@
 
   exception Lexing_error of char
 
-  let kwd_tbl = ["let",LET; "in",IN; "set",SET; "print",PRINT]
+  let kwd_tbl = [
+    "let", LET;
+    "in", IN;
+    "set", SET;
+    "print", PRINT;
+    "true", TRUE;
+    "false", FALSE;
+    "if", IF;
+    "then", THEN;
+    "else", ELSE;
+    "while", WHILE;
+    "do", DO;
+    "done", DONE;
+    "and", AND;
+    "or", OR;
+    "not", NOT;
+  ]
   let id_or_kwd s = try List.assoc s kwd_tbl with _ -> IDENT s
 
 }
 
 let letter = ['a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
-let ident = letter (letter | digit)*
+let ident = letter (letter | digit | '_')*
 let integer = ['0'-'9']+
 let space = [' ' '\t']
 
@@ -27,6 +43,12 @@ rule token = parse
   | '-'     { MINUS }
   | '*'     { TIMES }
   | '/'     { DIV }
+  | "=="    { EQEQ }
+  | "!="    { NEQ }
+  | "<="    { LE }
+  | ">="    { GE }
+  | '<'     { LT }
+  | '>'     { GT }
   | '='     { EQ }
   | '('     { LP }
   | ')'     { RP }

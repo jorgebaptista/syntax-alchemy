@@ -11,6 +11,13 @@ exception VarUndef of string
 (* Tamanho da frame, em byte (cada variável local ocupa 8 bytes) *)
 let frame_size = ref 0
 
+(* Counter for generating unique labels *)
+let label_counter = ref 0
+let new_label prefix =
+  let n = !label_counter in
+  incr label_counter;
+  prefix ^ string_of_int n
+
 (* As variáveis globais são arquivadas numa hash table (uma tabela de símbolos globais) *)
 let (genv : (string, unit) Hashtbl.t) = Hashtbl.create 17
 
@@ -28,6 +35,9 @@ let compile_expr =
     | Cst i ->
         (* Push constant value onto stack *)
         pushq (imm i)
+    | Bool b ->
+        (* Booleans: true = 1, false = 0 *)
+        pushq (imm (if b then 1 else 0))
     | Var x ->
         (* Check if it's a local variable *)
         if StrMap.mem x env then
@@ -39,6 +49,54 @@ let compile_expr =
           pushq (lab x)
         else
           raise (VarUndef x)
+    | Unop (Neg, e) ->
+        (* Compile expression, negate result *)
+        comprec env next e ++
+        popq rax ++
+        negq !%rax ++
+        pushq !%rax
+    | Unop (Not, e) ->
+        (* Compile expression, logical not: 0 -> 1, nonzero -> 0 *)
+        comprec env next e ++
+        popq rax ++
+        testq !%rax !%rax ++
+        sete !%al ++
+        movzbq !%al rax ++
+        pushq !%rax
+    | Binop (And, e1, e2) ->
+        (* Short-circuit AND: if e1 is false, don't evaluate e2 *)
+        let lbl_false = new_label ".Land_false" in
+        let lbl_end = new_label ".Land_end" in
+        comprec env next e1 ++
+        popq rax ++
+        testq !%rax !%rax ++
+        jz lbl_false ++
+        comprec env next e2 ++
+        popq rax ++
+        testq !%rax !%rax ++
+        jz lbl_false ++
+        pushq (imm 1) ++
+        jmp lbl_end ++
+        label lbl_false ++
+        pushq (imm 0) ++
+        label lbl_end
+    | Binop (Or, e1, e2) ->
+        (* Short-circuit OR: if e1 is true, don't evaluate e2 *)
+        let lbl_true = new_label ".Lor_true" in
+        let lbl_end = new_label ".Lor_end" in
+        comprec env next e1 ++
+        popq rax ++
+        testq !%rax !%rax ++
+        jnz lbl_true ++
+        comprec env next e2 ++
+        popq rax ++
+        testq !%rax !%rax ++
+        jnz lbl_true ++
+        pushq (imm 0) ++
+        jmp lbl_end ++
+        label lbl_true ++
+        pushq (imm 1) ++
+        label lbl_end
     | Binop (o, e1, e2)->
         (* Compile e1, result on stack *)
         comprec env next e1 ++
@@ -49,16 +107,47 @@ let compile_expr =
         popq rax ++
         (* Perform operation: %rax = %rax op %rdi *)
         (match o with
-         | Add -> addq !%rdi !%rax
-         | Sub -> subq !%rdi !%rax
-         | Mul -> imulq !%rdi !%rax
+         | Add -> addq !%rdi !%rax ++ pushq !%rax
+         | Sub -> subq !%rdi !%rax ++ pushq !%rax
+         | Mul -> imulq !%rdi !%rax ++ pushq !%rax
          | Div -> 
              (* For division: rax = rax / rdi *)
              (* Need to sign-extend rax into rdx:rax *)
              cqto ++
-             idivq !%rdi) ++
-        (* Push result back onto stack *)
-        pushq !%rax
+             idivq !%rdi ++
+             pushq !%rax
+         | Eq ->
+             cmpq !%rdi !%rax ++
+             sete !%al ++
+             movzbq !%al rax ++
+             pushq !%rax
+         | Neq ->
+             cmpq !%rdi !%rax ++
+             setne !%al ++
+             movzbq !%al rax ++
+             pushq !%rax
+         | Lt ->
+             cmpq !%rdi !%rax ++
+             setl !%al ++
+             movzbq !%al rax ++
+             pushq !%rax
+         | Le ->
+             cmpq !%rdi !%rax ++
+             setle !%al ++
+             movzbq !%al rax ++
+             pushq !%rax
+         | Gt ->
+             cmpq !%rdi !%rax ++
+             setg !%al ++
+             movzbq !%al rax ++
+             pushq !%rax
+         | Ge ->
+             cmpq !%rdi !%rax ++
+             setge !%al ++
+             movzbq !%al rax ++
+             pushq !%rax
+         | And | Or -> assert false (* handled above *)
+        )
     | Letin (x, e1, e2) ->
         (* Allocate space for local variable if needed *)
         if !frame_size = next then frame_size := 8 + !frame_size;
@@ -69,11 +158,24 @@ let compile_expr =
         movq !%rax (ind ~ofs:(-next-8) rbp) ++
         (* Compile e2 with x in environment, pointing to its stack location *)
         comprec (StrMap.add x (-next-8) env) (next + 8) e2
+    | IfExpr (cond, e1, e2) ->
+        (* Compile conditional expression: if cond then e1 else e2 *)
+        let lbl_else = new_label ".Lelse" in
+        let lbl_end = new_label ".Lendif" in
+        comprec env next cond ++
+        popq rax ++
+        testq !%rax !%rax ++
+        jz lbl_else ++
+        comprec env next e1 ++
+        jmp lbl_end ++
+        label lbl_else ++
+        comprec env next e2 ++
+        label lbl_end
   in
   comprec StrMap.empty 0
 
 (* Compilação de uma instrução *)
-let compile_instr = function
+let rec compile_instr env = function
   | Set (x, e) ->
       (* Add variable to global environment if not already there *)
       if not (Hashtbl.mem genv x) then Hashtbl.add genv x ();
@@ -89,11 +191,50 @@ let compile_instr = function
       popq rdi ++
       (* Call print_int function *)
       call "print_int"
+  | If (cond, then_stmts, else_stmts) ->
+      let lbl_else = new_label ".Lelse" in
+      let lbl_end = new_label ".Lendif" in
+      (* Compile condition *)
+      compile_expr cond ++
+      popq rax ++
+      testq !%rax !%rax ++
+      jz lbl_else ++
+      (* Then branch *)
+      compile_block env then_stmts ++
+      jmp lbl_end ++
+      (* Else branch *)
+      label lbl_else ++
+      compile_block env else_stmts ++
+      label lbl_end
+  | While (cond, body) ->
+      let lbl_start = new_label ".Lwhile" in
+      let lbl_end = new_label ".Lendwhile" in
+      (* Loop start *)
+      label lbl_start ++
+      (* Compile condition *)
+      compile_expr cond ++
+      popq rax ++
+      testq !%rax !%rax ++
+      jz lbl_end ++
+      (* Body *)
+      compile_block env body ++
+      (* Jump back to start *)
+      jmp lbl_start ++
+      (* End of loop *)
+      label lbl_end
+
+and compile_block env stmts =
+  List.fold_left (fun code stmt -> code ++ compile_instr env stmt) nop stmts
 
 
 (* Compila o programa p e grava o código no ficheiro ofile *)
 let compile_program p ofile =
-  let code = List.map compile_instr p in
+  (* Reset state for each compilation *)
+  label_counter := 0;
+  Hashtbl.clear genv;
+  frame_size := 0;
+  
+  let code = List.map (compile_instr StrMap.empty) p in
   let code = List.fold_right (++) code nop in
   if !frame_size mod 16 = 8 then frame_size := 8 + !frame_size;
   let p =
@@ -128,3 +269,4 @@ let compile_program p ofile =
   (* "flush" do buffer para assegurar que tudo o que há por gravar foi de facto gravado antes de fecha-lo *)
   fprintf fmt "@?";
   close_out f
+

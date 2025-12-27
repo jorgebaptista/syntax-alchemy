@@ -1,106 +1,72 @@
 # alchemy-arithc
 
-Simple compiler from Arith mini-language to x86-64 assembly.
+Compiler from Arith mini-language to x86-64 assembly.
 
-## What it does
+**→ See [ROADMAP.md](../docs/ROADMAP.md) for development plan**
 
-Takes programs like this:
+## What is Arith?
+
+A simple imperative language with:
+- [Arithmetic](docs/features/arithmetic.md) - integers, +, -, *, /
+- [Variables](docs/features/variables.md) - global and local
+- [Booleans](docs/features/booleans.md) - comparisons and logical ops
+- [Control flow](docs/features/control-flow.md) - if/else, while loops
+- `print` - output values
+
+**Example program:**
 ```
 set x = 10
 if x > 5 then
   print x * (x + 1) / 2
 else
   print 0
-
-set i = 0
-while i < 5 do
-  print i
-  set i = i + 1
-done
 ```
 
-And compiles them to x86-64 assembly.
+Compiles to x86-64 assembly (AT&T syntax).
 
-**Features:**
-- Arithmetic (`+`, `-`, `*`, `/`)
-- Booleans (`true`, `false`)
-- Comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`)
-- Logical operators (`and`, `or`, `not`) with short-circuit evaluation
-- Global variables (`set`)
-- Local variables (`let...in`)
-- Conditionals (`if...then...else`)
-- Loops (`while...do...done`)
-- Print (`print`)
+## Build & Run
 
-## Structure
-
-```
-src/compile.ml         The compiler
-src/parser.mly         Parser (Menhir)
-src/lexer.mll          Lexer (ocamllex)
-tests/*.exp            Test programs
-examples/generated/    Example assembly output
-```
-
-## Quick Start
-
+**Build:**
 ```bash
-# Setup (first time only)
 export PATH="../_opam/bin:$PATH"
-
-# Build
 dune build
-
-# Compile a program
-./src/arithc.exe tests/test.exp
-
-# On Linux: run it
-gcc -g -no-pie test.s -o test.out && ./test.out
 ```
 
-Expected output: `60, 50, 0, 10, 55, 60, 20, 43`
-
-## How it works
-
-**Pipeline:** `.exp` → Lexer → Parser → Compiler → `.s` assembly
-
-**Strategy:**
-- Stack-based: everything gets pushed/popped
-- Global vars in `.data` segment
-- Local vars on stack frame (`%rbp`-relative)
-- 16-byte stack alignment for printf
-
-## Language syntax
-
-```
-# Variables
-set x = expr                    # global variable
-let x = e1 in e2                # local variable (in expressions)
-
-# Output
-print expr                      # print result
-
-# Control flow
-if cond then stmt else stmt     # conditional
-if cond then e1 else e2         # conditional expression
-while cond do stmts done        # loop
-
-# Operators
-+ - * /                         # arithmetic
-== != < <= > >=                 # comparison
-and or not                      # logical (short-circuit)
-true false                      # boolean literals
+**Compile a program:**
+```bash
+./src/arithc.bc <file.exp>
 ```
 
-Operators: `+`, `-`, `*`, `/`, parentheses
-
-Example:
-```
-set x = 10
-print (let y = x + 1 in x * y)   # prints 110
+**Run (WSL/Linux):**
+```bash
+wsl gcc -g -no-pie <file.s> -o <file.out>
+wsl ./<file.out>
 ```
 
-## Docs
+**Test all:**
+```bash
+./tests/run_tests.sh
+```
 
-- [Lab assignment](./docs/lab-assignment.md) (Portuguese)
-- [x86-64 reference](./docs/x86-64-reference.md)
+## How It Works
+
+**Pipeline:** `.exp` → Lexer (ocamllex) → Parser (Menhir) → Compiler → `.s`
+
+**Compilation strategy:**
+- Stack-based evaluation
+- Global vars: `.data` segment
+- Local vars: stack frame (`%rbp`-relative)
+- 16-byte alignment for printf calls
+
+**Files:**
+- `src/ast.ml` - Abstract syntax tree
+- `src/lexer.mll` - Token definitions
+- `src/parser.mly` - Grammar rules
+- `src/compile.ml` - Code generation
+- `src/x86_64.ml` - Assembly helpers
+
+## References
+
+- [x86-64 reference](docs/x86-64-reference.md)
+- [Lab assignment](docs/lab-assignment.md) (Portuguese)
+- [TD2 Mini-Python](../labs/td2-mini-python/) (interpreter reference)

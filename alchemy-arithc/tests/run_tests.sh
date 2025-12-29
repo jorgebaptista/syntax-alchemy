@@ -20,6 +20,6 @@ run_case() {
   fi
 }
 
-for case in test_step1 test_step2 test_step3 test_step4 test; do
+for case in test_step1 test_step2 test_step3 test_step4 test test_booleans test_conditionals test_logical test_loops; do
   run_case "$case"
 done

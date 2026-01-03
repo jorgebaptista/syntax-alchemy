@@ -24,12 +24,12 @@ syntax-alchemy/
 │   └── tests/             # test_*.exp + test_*.expected
 ├── labs/                  # Learning exercises (TD2-TD6)
 │   └── td2/               # Reference implementation
-    └── td3/
-    └── .../
+│   └── td3/
+│   └── .../
 ├── docs/
 │   ├── ROADMAP.md         # Development plan
-│   ├── labs/              # Lab instructions (TD1-TD6)
-└── _opam/                 # OCaml toolchain
+│   └── labs/              # Lab instructions (TD1-TD6)
+└── scripts/               # Helper scripts
 ```
 
 ## How Labs Connect
@@ -45,23 +45,29 @@ syntax-alchemy/
 
 ## Environment
 
-- **Build**: MSYS2 bash (`dune build`)
-- **Run**: WSL Ubuntu (`gcc -g -no-pie *.s && ./a.out`)
-- **OCaml**: 5.4.0 in `_opam/`
+> **All development uses WSL Ubuntu or native Linux.**
+
+- **OCaml**: 5.4.0 via opam
+- **Build**: `dune build`
+- **Format**: `ocamlformat` (0.28.1), `dune format-dune-file`
+- **Compile/Run**: `gcc -g -no-pie *.s && ./a.out`
 
 ## Workflow
 
 ```bash
+# Enter environment
+eval $(opam env)
+cd alchemy-arithc
+
 # Build
-cd alchemy-arithc && dune build
+dune build
 
-# Test single
-./src/arithc.bc tests/test.exp
-wsl gcc -g -no-pie tests/test.s -o tests/test.out && wsl ./tests/test.out
+# Compile and run single test
+./_build/default/src/arithc.bc tests/test.exp
+gcc -g -no-pie tests/test.s -o tests/test.out && ./tests/test.out
 
-# Test all
-for t in tests/*.exp; do ./src/arithc.bc $t; done
-wsl -d Ubuntu -e bash -c 'cd /mnt/d/.../alchemy-arithc && for t in tests/*.s; do gcc -g -no-pie $t -o ${t%.s}.out && ./${t%.s}.out; done'
+# Run all tests
+dune test
 ```
 
 ## Code Style

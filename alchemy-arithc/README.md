@@ -14,6 +14,7 @@ A simple imperative language with:
 - `print` - output values
 
 **Example program:**
+
 ```
 set x = 10
 if x > 5 then
@@ -26,26 +27,37 @@ Compiles to x86-64 assembly (AT&T syntax).
 
 ## Build & Run
 
+> **Requires:** WSL/Linux with OCaml 5.4.0, opam, dune, menhir, and gcc.
+
+**Setup (first time):**
+
+```bash
+# In WSL Ubuntu
+opam init -y && opam switch create default 5.4.0 -y
+eval $(opam env)
+opam install dune menhir -y
+```
+
 **Build:**
+
 ```bash
-export PATH="../_opam/bin:$PATH"
-dune build
+eval $(opam env)
+cd alchemy-arithc && dune build
 ```
 
-**Compile a program:**
-```bash
-./src/arithc.bc <file.exp>
-```
+**Compile and run a program:**
 
-**Run (WSL/Linux):**
 ```bash
-wsl gcc -g -no-pie <file.s> -o <file.out>
-wsl ./<file.out>
+./_build/default/src/arithc.bc <file.exp>   # generates <file.s>
+gcc -g -no-pie <file.s> -o <file.out>       # assemble
+./<file.out>                                 # run
 ```
 
 **Test all:**
+
 ```bash
-./tests/run_tests.sh
+dune test
+# or: ./tests/run_tests.sh ./_build/default/src/arithc.exe
 ```
 
 ## How It Works
@@ -53,12 +65,14 @@ wsl ./<file.out>
 **Pipeline:** `.exp` → Lexer (ocamllex) → Parser (Menhir) → Compiler → `.s`
 
 **Compilation strategy:**
+
 - Stack-based evaluation
 - Global vars: `.data` segment
 - Local vars: stack frame (`%rbp`-relative)
 - 16-byte alignment for printf calls
 
 **Files:**
+
 - `src/ast.ml` - Abstract syntax tree
 - `src/lexer.mll` - Token definitions
 - `src/parser.mly` - Grammar rules

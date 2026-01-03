@@ -28,7 +28,7 @@ jobs:
           echo "Found projects: $projects"
 
   build-and-test:
-    name: Build & Test
+    name: ${{ matrix.project }}
     needs: detect-projects
     if: needs.detect-projects.outputs.matrix != '[]'
     runs-on: ubuntu-22.04
@@ -36,9 +36,6 @@ jobs:
       fail-fast: false
       matrix:
         project: ${{ fromJson(needs.detect-projects.outputs.matrix) }}
-        ocaml-version:
-          - 4.14.x
-          - 5.0.x
     
     steps:
       - uses: actions/checkout@v4
@@ -46,8 +43,13 @@ jobs:
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: ${{ matrix.ocaml-version }}
+          ocaml-compiler: 5.4.x
           dune-cache: true
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc
       
       - name: Install build tools
         run: |
@@ -71,11 +73,11 @@ jobs:
       - name: Check formatting
         working-directory: ${{ matrix.project }}
         run: |
-          opam install ocamlformat.0.26.0 --yes
+          opam install ocamlformat.0.28.1 --yes
           opam exec -- dune build @fmt
 
   status-check:
-    name: OCaml CI Status
+    name: Status
     needs: build-and-test
     if: always()
     runs-on: ubuntu-latest
@@ -83,8 +85,8 @@ jobs:
       - name: Check build status
         run: |
           if [ "${{ needs.build-and-test.result }}" == "success" ]; then
-            echo "✅ All OCaml projects built and tested successfully"
+            echo "✅ All projects passed"
           else
-            echo "❌ Some OCaml projects failed"
+            echo "❌ Some projects failed"
             exit 1
           fi

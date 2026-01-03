@@ -99,7 +99,7 @@ let rec expr (ctx: ctx) = function
         | Bgt, v1, v2  -> Vbool (v1 > v2)
         | Bge, v1, v2  -> Vbool (v1 >= v2)
         | Badd, Vstring s1, Vstring s2 ->
-            Vstring (v1 ^ v2) 
+            Vstring (s1 ^ s2) 
         | Badd, Vlist l1, Vlist l2 ->
             Vlist (Array.append l1 l2)
         | _ -> error "Unsupported operand types"
@@ -108,6 +108,7 @@ let rec expr (ctx: ctx) = function
       begin match expr ctx e1 with
       | Vint n -> Vint (-n)
       | _ -> error "Unsupported operand types"
+      end
   (* booleanos *)
   | Ecst (Cbool b) ->
       Vbool b
@@ -120,9 +121,9 @@ let rec expr (ctx: ctx) = function
   | Eunop (Unot, e1) ->
       Vbool (is_false (expr ctx e1))
   | Eident id ->
-      match Hashtbl.find_opt ctx id with
+      (match Hashtbl.find_opt ctx id with
       | Some v -> v
-      | None -> error ("unbound variable " ^ id)
+      | None -> error ("unbound variable " ^ id))
   (* avalia e1 e devolve o tamanho da lista como Vint. Caso contrário, dá erro*)
   | Ecall ("len", [e1]) ->
       begin match expr ctx e1 with
@@ -157,11 +158,11 @@ let rec expr (ctx: ctx) = function
       List.iter2 (fun x v -> Hashtbl.add ctx' x v) params args;
 
       (* Executar a função *)
-      try
+      (try
         stmt ctx' body;
         Vnone (* se não houver return *)
       with
-      | Return v -> v (* valor devolvido pela função *)
+      | Return v -> v )(* valor devolvido pela função *)
     
   (* Avalia cada expressão da lista no ctx atual, cria um array com esses valores e devolve Vlist array *)
   | Elist el ->

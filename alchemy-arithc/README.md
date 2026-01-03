@@ -7,6 +7,7 @@ Compiler from Arith mini-language to x86-64 assembly.
 ## What is Arith?
 
 A simple imperative language with:
+
 - [Arithmetic](docs/features/arithmetic.md) - integers, +, -, *, /
 - [Variables](docs/features/variables.md) - global and local
 - [Booleans](docs/features/booleans.md) - comparisons and logical ops
@@ -15,7 +16,7 @@ A simple imperative language with:
 
 **Example program:**
 
-```
+```text
 set x = 10
 if x > 5 then
   print x * (x + 1) / 2
@@ -38,18 +39,26 @@ eval $(opam env)
 opam install dune menhir -y
 ```
 
-**Build:**
+**Build the compiler:**
 
 ```bash
 eval $(opam env)
 cd alchemy-arithc && dune build
 ```
 
-**Compile and run a program:**
+**Quick start with wrapper script:**
 
 ```bash
-./_build/default/src/arithc.bc <file.exp>   # generates <file.s>
-gcc -g -no-pie <file.s> -o <file.out>       # assemble
+./arith run tests/test_step1.exp      # compile and run
+./arith build examples/demo.exp       # compile to executable
+./arith compile tests/test.exp        # compile to assembly only
+```
+
+**Manual compilation (what the script does):**
+
+```bash
+./_build/default/src/arithc.bc <file.exp>   # Arith → assembly (.s)
+gcc -g -no-pie <file.s> -o <file.out>       # assembly → binary
 ./<file.out>                                 # run
 ```
 
@@ -57,12 +66,13 @@ gcc -g -no-pie <file.s> -o <file.out>       # assemble
 
 ```bash
 dune test
-# or: ./tests/run_tests.sh ./_build/default/src/arithc.exe
 ```
 
 ## How It Works
 
-**Pipeline:** `.exp` → Lexer (ocamllex) → Parser (Menhir) → Compiler → `.s`
+**Pipeline:** `.exp` (Arith) → **arithc** → `.s` (x86-64 asm) → **gcc** → binary
+
+The compiler (`arithc`) translates Arith to assembly. GCC assembles and links with libc (for `printf`).
 
 **Compilation strategy:**
 

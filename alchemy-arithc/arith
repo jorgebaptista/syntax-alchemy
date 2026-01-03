@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# Arith compiler wrapper - compile and run .exp programs
+
+set -e
+
+ARITHC="_build/default/src/arithc.bc"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+    cat << EOF
+Usage: arith <command> <file.exp>
+
+Commands:
+  run <file>       Compile and run immediately
+  build <file>     Compile to executable (creates file.out)
+  compile <file>   Compile to assembly only (creates file.s)
+
+Examples:
+  arith run tests/test_step1.exp
+  arith build examples/demo.exp && ./examples/demo.out
+  arith compile tests/test.exp
+
+Note: Requires arithc to be built first (run 'dune build')
+EOF
+    exit 1
+}
+
+check_arithc() {
+    if [[ ! -f "$SCRIPT_DIR/$ARITHC" ]]; then
+        echo "Error: Compiler not built. Run 'dune build' first." >&2
+        exit 1
+    fi
+}
+
+compile_to_asm() {
+    local exp_file="$1"
+    local base="${exp_file%.exp}"
+    local asm_file="${base}.s"
+    
+    "$SCRIPT_DIR/$ARITHC" "$exp_file"
+    echo "Generated: $asm_file"
+}
+
+assemble() {
+    local asm_file="$1"
+    local base="${asm_file%.s}"
+    local out_file="${base}.out"
+    
+    gcc -g -no-pie "$asm_file" -o "$out_file" 2>/dev/null
+    echo "Built: $out_file" >&2
+    echo "$out_file"
+}
+
+run_program() {
+    local out_file="$1"
+    echo "--- Output ---"
+    "$out_file"
+    local exit_code=$?
+    echo "--- Exit: $exit_code ---"
+    return $exit_code
+}
+
+# Main
+[[ $# -lt 2 ]] && usage
+
+check_arithc
+
+cmd="$1"
+file="$2"
+
+[[ ! -f "$file" ]] && { echo "Error: File '$file' not found" >&2; exit 1; }
+
+case "$cmd" in
+    compile)
+        compile_to_asm "$file"
+        ;;
+    build)
+        compile_to_asm "$file"
+        base="${file%.exp}"
+        assemble "${base}.s"
+        ;;
+    run)
+        compile_to_asm "$file"
+        base="${file%.exp}"
+        out_file=$(assemble "${base}.s")
+        run_program "$out_file"
+        ;;
+    *)
+        echo "Error: Unknown command '$cmd'" >&2
+        usage
+        ;;
+esac

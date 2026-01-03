@@ -14,7 +14,6 @@ Compiler from Arith mini-language to x86-64 assembly. Based on [TD1](labs/TD1.md
 2. **Test First** - Add tests before implementing features
 3. **Incremental** - Small changes, verify with tests
 4. **Clarity** - Code teaches; comments explain "why"
-5. **Document as you build** - Write feature docs when implementing, not before
 
 ## Project Structure
 
@@ -25,12 +24,12 @@ syntax-alchemy/
 │   └── tests/             # test_*.exp + test_*.expected
 ├── labs/                  # Learning exercises (TD2-TD6)
 │   └── td2/               # Reference implementation
-    └── td3/
-    └── .../
+│   └── td3/
+│   └── .../
 ├── docs/
 │   ├── ROADMAP.md         # Development plan
-│   ├── labs/              # Lab instructions (TD1-TD6)
-└── _opam/                 # OCaml toolchain
+│   └── labs/              # Lab instructions (TD1-TD6)
+└── scripts/               # Helper scripts
 ```
 
 ## How Labs Connect
@@ -46,23 +45,29 @@ syntax-alchemy/
 
 ## Environment
 
-- **Build**: MSYS2 bash (`dune build`)
-- **Run**: WSL Ubuntu (`gcc -g -no-pie *.s && ./a.out`)
-- **OCaml**: 5.4.0 in `_opam/`
+> **All development uses WSL Ubuntu or native Linux.**
+
+- **OCaml**: 5.4.0 via opam
+- **Build**: `dune build`
+- **Format**: `ocamlformat` (0.28.1), `dune format-dune-file`
+- **Compile/Run**: `gcc -g -no-pie *.s && ./a.out`
 
 ## Workflow
 
 ```bash
+# Enter environment
+eval $(opam env)
+cd alchemy-arithc
+
 # Build
-cd alchemy-arithc && dune build
+dune build
 
-# Test single
-./src/arithc.bc tests/test.exp
-wsl gcc -g -no-pie tests/test.s -o tests/test.out && wsl ./tests/test.out
+# Compile and run single test
+./_build/default/src/arithc.bc tests/test.exp
+gcc -g -no-pie tests/test.s -o tests/test.out && ./tests/test.out
 
-# Test all
-for t in tests/*.exp; do ./src/arithc.bc $t; done
-wsl -d Ubuntu -e bash -c 'cd /mnt/d/.../alchemy-arithc && for t in tests/*.s; do gcc -g -no-pie $t -o ${t%.s}.out && ./${t%.s}.out; done'
+# Run all tests
+dune test
 ```
 
 ## Code Style
@@ -70,27 +75,6 @@ wsl -d Ubuntu -e bash -c 'cd /mnt/d/.../alchemy-arithc && for t in tests/*.s; do
 - OCaml: Use pattern matching, avoid mutable state except where needed
 - Assembly: AT&T syntax, stack-based evaluation, 16-byte alignment for printf
 - Tests: One `.exp` (source) + `.expected` (output) per feature
-
-## Documentation Workflow
-
-**When implementing a feature:**
-1. Add tests first (`.exp` + `.expected`)
-2. Implement the feature
-3. Create/update feature doc in `alchemy-arithc/docs/features/`
-4. Link from README → feature doc
-
-**Feature docs contain:**
-- Brief explanation of the feature
-- Syntax examples
-- Compilation notes (how it maps to assembly)
-- Links to relevant test files
-
-**README contains:**
-- Only features that exist NOW
-- Links to feature docs (not full examples)
-- Build/run instructions
-
-**Never document "coming soon" features in README** - add them when they're implemented. Unless it's a roadmap item in `ROADMAP.md`.
 
 ---
 

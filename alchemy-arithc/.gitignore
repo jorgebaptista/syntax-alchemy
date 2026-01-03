@@ -1,0 +1,18 @@
+# Build artifacts
+_build/
+*.exe
+*.out
+*.o
+
+# Generated assembly (keep examples/generated/)
+*.s
+!examples/generated/*.s
+
+# Editor
+*~
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

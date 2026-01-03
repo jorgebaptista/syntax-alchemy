@@ -1,0 +1,6 @@
+set x = 10
+print x
+set y = x * (x + 1) / 2
+print y
+set z = 100
+print x + y + z

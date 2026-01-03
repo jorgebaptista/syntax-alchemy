@@ -1,0 +1,4 @@
+# Force Unix line endings for shell scripts
+arith text eol=lf
+tests/run_tests.sh text eol=lf
+*.exp text eol=lf

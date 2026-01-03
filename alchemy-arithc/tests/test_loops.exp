@@ -1,0 +1,24 @@
+# Test while loops
+set i = 0
+while i < 5 do
+  print i
+  set i = i + 1
+done
+
+# Sum 1 to 10
+set sum = 0
+set n = 1
+while n <= 10 do
+  set sum = sum + n
+  set n = n + 1
+done
+print sum
+
+# Factorial of 5
+set fact = 1
+set k = 1
+while k <= 5 do
+  set fact = fact * k
+  set k = k + 1
+done
+print fact

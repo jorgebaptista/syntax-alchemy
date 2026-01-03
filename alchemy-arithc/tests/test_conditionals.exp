@@ -1,0 +1,15 @@
+# Test if-then-else statements
+set x = 10
+if x > 5 then print 1 else print 0
+if x < 5 then print 1 else print 0
+
+# Nested conditionals
+set y = 20
+if x < y then (
+  print 100
+  if x == 10 then print 200 else print 0
+) else print 0
+
+# If expression (returns value)
+print (if 1 < 2 then 42 else 0)
+print (if 1 > 2 then 42 else 99)

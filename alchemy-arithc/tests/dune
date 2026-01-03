@@ -1,0 +1,9 @@
+(rule
+ (alias runtest)
+ (deps run_tests.sh test.exp test.expected test_step1.exp test_step1.expected
+   test_step2.exp test_step2.expected test_step3.exp test_step3.expected
+   test_step4.exp test_step4.expected test_booleans.exp
+   test_booleans.expected test_conditionals.exp test_conditionals.expected
+   test_logical.exp test_logical.expected test_loops.exp test_loops.expected)
+ (action
+  (run bash %{dep:run_tests.sh} %{exe:../src/arithc.exe})))

@@ -23,7 +23,23 @@ Each experiment lives in its own `alchemy-*` directory, complete with source cod
 |---------|--------|-------------|
 | [alchemy-arithc](./alchemy-arithc) | ⚗️ In Progress | Arith language compiler to x86-64 assembly |
 
-**See [docs/LABS.md](./docs/LABS.md) for full laboratory index.**
+**→ See [docs/ROADMAP.md](./docs/ROADMAP.md) for the development plan.**
+
+---
+
+## 📖 Labs
+
+Independent learning exercises from the compiler course:
+
+| Lab | Topic | Status |
+|-----|-------|--------|
+| [td2-mini-python](./labs/td2-mini-python) | Mini-Python interpreter | ✅ Complete |
+| [td3-algorithm-w](./labs/td3-algorithm-w) | Type inference | 🔮 Planned |
+| [td4-automata](./labs/td4-automata) | DFA from regex | 🔮 Planned |
+| [td5-ll1-parser](./labs/td5-ll1-parser) | LL(1) parsing | 🔮 Planned |
+| [td6-mini-turtle](./labs/td6-mini-turtle) | Turtle graphics | 🔮 Planned |
+
+**→ See [labs/README.md](./labs/README.md) for how labs connect to the main project.**
 
 ---
 

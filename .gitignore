@@ -72,3 +72,13 @@ _site/
 *.temp
 
 nul
+
+# macOS archive artifacts
+__MACOSX/
+__MACOSX/**
+**/__MACOSX/**
+**/__MACOSX/
+
+# macOS filesystem files
+.DS_Store
+._run-tests

@@ -1,15 +1,8 @@
 open Format
 open Ast
 
-type typ =
-  | TInt
-  | TBool
-  | TVar of tvar
-
-and tvar = {
-  id : int;
-  mutable def : typ option;
-}
+type typ = TInt | TBool | TVar of tvar
+and tvar = { id : int; mutable def : typ option }
 
 let rec pp_typ fmt = function
   | TInt -> fprintf fmt "int"
@@ -25,6 +18,7 @@ module V = struct
 
   let compare v1 v2 = Stdlib.compare v1.id v2.id
   let equal v1 v2 = v1.id = v2.id
+
   let create =
     let r = ref 0 in
     fun () ->
@@ -43,10 +37,7 @@ let rec head = function
   | t -> t
 
 let rec canon t =
-  match head t with
-  | TInt -> TInt
-  | TBool -> TBool
-  | TVar v -> TVar v
+  match head t with TInt -> TInt | TBool -> TBool | TVar v -> TVar v
 
 exception TypeError of typ * typ
 exception VarUndef of string
@@ -54,9 +45,7 @@ exception VarUndef of string
 let type_error t1 t2 = raise (TypeError (canon t1, canon t2))
 
 let rec occur v t =
-  match head t with
-  | TVar v' -> V.equal v v'
-  | TInt | TBool -> false
+  match head t with TVar v' -> V.equal v v' | TInt | TBool -> false
 
 let rec unify t1 t2 =
   match (head t1, head t2) with

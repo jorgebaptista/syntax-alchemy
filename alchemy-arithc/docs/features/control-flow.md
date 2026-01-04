@@ -4,7 +4,8 @@ Conditionals and loops for program control.
 
 ## If-Then-Else (Statement)
 
-Execute statements based on condition.
+Execute statements based on condition. Conditions must be boolean (see
+[booleans](booleans.md)).
 
 **Syntax:**
 ```
@@ -43,7 +44,8 @@ Output: `20`
 
 ## While Loops
 
-Repeat statements while condition is true.
+Repeat statements while condition is true. Conditions must be boolean (see
+[booleans](booleans.md)).
 
 **Syntax:**
 ```
@@ -85,6 +87,48 @@ done
 print sum
 ```
 Output: `55`
+
+## For Loops
+
+Iterate over a list (evaluated once).
+
+**Syntax:**
+```
+for <name> in <list-expr> do
+  <statements>
+done
+```
+
+**Example:**
+```
+set sum = 0
+for x in [1, 2, 3] do
+  set sum = sum + x
+done
+print sum
+```
+Output: `6`
+
+**Compilation:** stores the list pointer and length, then loops over indices.
+
+**Scope:** the loop variable exists only inside the loop body. If you need the
+last value after the loop, assign it to a variable defined before the loop.
+
+## Expression Statements
+
+Any expression can be used as a statement; its value is ignored. This is
+useful for calling functions with side effects.
+
+**Example:**
+```
+def set_first(a) (
+  set a[0] = 42
+)
+set xs = [1, 2]
+set_first(xs)
+print xs[0]
+```
+Output: `42`
 
 ## Compilation
 

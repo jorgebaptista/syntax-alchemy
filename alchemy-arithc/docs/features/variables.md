@@ -48,8 +48,10 @@ Output: `19`
 
 ## Scope Rules
 
-- Global variables are visible everywhere after declaration
+- Global variables are visible in top-level statements after declaration
+- Functions do not capture globals; pass values as parameters instead
 - Local variables shadow outer variables with the same name
 - Local variables only exist within their `let...in` expression
+- Variables introduced inside `if`/`while`/`for` do not escape unless defined on all paths
 
 See [test_step3.exp](../../tests/test_step3.exp) (globals) and [test_step4.exp](../../tests/test_step4.exp) (locals) for more examples.

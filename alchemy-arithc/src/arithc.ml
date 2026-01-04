@@ -65,6 +65,9 @@ let () =
     (* Paramos aqui se só pretendemos a fase de parsing *)
     if !parse_only then exit 0;
 
+    (* Type-checking before code generation *)
+    ignore (Typecheck.check_program p);
+
     (* Compilamos a árvore de sintaxe abstrata p.
         O código máquina resultante de desta transformação deve ser
 	escrito no ficheiro target  ofile. *)
@@ -80,7 +83,28 @@ let () =
       localisation (Lexing.lexeme_start_p buf);
       eprintf "Syntax Error@.";
       exit 1
+  | Typecheck.VarUndef s ->
+      eprintf "Compilation Error: The variable %s is not defined@." s;
+      exit 1
+  | Typecheck.FuncUndef s ->
+      eprintf "Compilation Error: The function %s is not defined@." s;
+      exit 1
+  | Typecheck.FuncRedef s ->
+      eprintf "Compilation Error: The function %s is already defined@." s;
+      exit 1
+  | Typecheck.ReturnOutside ->
+      eprintf "Compilation Error: return used outside of a function@.";
+      exit 1
+  | Typecheck.ArityMismatch (name, expected, actual) ->
+      eprintf
+        "Type Error: wrong number of arguments for %s (expected %d, got %d)@."
+        name expected actual;
+      exit 1
+  | Typecheck.TypeError (t1, t2) ->
+      eprintf "Type Error: cannot unify %a with %a@." Typecheck.pp_typ t1
+        Typecheck.pp_typ t2;
+      exit 1
   | Compile.VarUndef s ->
       (* Erro derivado de um mau uso de variável durante a compilação *)
-      eprintf "Compilation Error: The variable %s is not definded@." s;
+      eprintf "Compilation Error: The variable %s is not defined@." s;
       exit 1

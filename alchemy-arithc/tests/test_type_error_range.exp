@@ -1,0 +1,2 @@
+# Type error: range expects int
+print list(range(true))

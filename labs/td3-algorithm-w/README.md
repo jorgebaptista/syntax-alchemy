@@ -1,6 +1,6 @@
 # TD3 - Algorithm W (Type Inference)
 
-**Status:** 🔮 Planned
+**Status:** Complete
 
 ## Overview
 
@@ -26,3 +26,10 @@ This lab is **optional** for the main project. If you want to add type checking 
 ## Reference
 
 See [docs/labs/TD3.md](../../docs/labs/TD3.md) for the full lab instructions.
+
+## Run
+
+```bash
+cd labs/td3-algorithm-w
+dune runtest
+```

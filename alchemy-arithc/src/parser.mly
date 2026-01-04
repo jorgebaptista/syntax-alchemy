@@ -7,14 +7,20 @@
 
 %token <int> CST
 %token <string> IDENT
+%token <string> STRING
 %token SET, LET, IN, PRINT
-%token TRUE, FALSE
+%token TRUE, FALSE, NONE
 %token IF, THEN, ELSE
 %token WHILE, DO, DONE
+%token DEF, RETURN
+%token LEN, LIST, RANGE
+%token FOR
 %token AND, OR, NOT
 %token EOF
 %token LP RP
-%token PLUS MINUS TIMES DIV
+%token LSQ RSQ
+%token COMMA
+%token PLUS MINUS TIMES DIV MOD
 %token EQ EQEQ NEQ LT LE GT GE
 
 /* Definição das prioridades e das associatividades dos tokens */
@@ -26,9 +32,10 @@
 %left EQEQ NEQ
 %left LT LE GT GE
 %left PLUS MINUS
-%left TIMES DIV
+%left TIMES DIV MOD
 %nonassoc NOT
 %nonassoc uminus
+%nonassoc LSQ
 
 /* Entry point para a gramática */
 %start prog
@@ -39,7 +46,7 @@
 %%
 
 prog:
-| p = stmts EOF { List.rev p }
+| dl = list(def) s = opt_stmts EOF { (dl, s) }
 ;
 
 stmts:
@@ -47,17 +54,35 @@ stmts:
 | l = stmts i = stmt     { i :: l }
 ;
 
+opt_stmts:
+| /* empty */            { [] }
+| l = stmts              { List.rev l }
+;
+
+def:
+| DEF f = IDENT LP params = separated_list(COMMA, IDENT) RP b = block
+    { (f, params, b) }
+;
+
 stmt:
 | SET id = IDENT EQ e = expr 
     { Set (id, e) }
+| SET id = IDENT LSQ i = expr RSQ EQ e = expr
+    { SetIndex (Var id, i, e) }
 | PRINT e = expr             
     { Print e }
+| e = expr
+    { Expr e }
 | IF e = expr THEN b1 = block ELSE b2 = block
     { If (e, b1, b2) }
 | IF e = expr THEN b1 = block
     { If (e, b1, []) }
 | WHILE e = expr DO b = while_block DONE
     { While (e, b) }
+| FOR id = IDENT IN e = expr DO b = while_block DONE
+    { For (id, e, b) }
+| RETURN e = expr
+    { Return e }
 ;
 
 while_block:
@@ -74,7 +99,17 @@ expr:
 | c = CST                            { Cst c }
 | TRUE                               { Bool true }
 | FALSE                              { Bool false }
+| STRING                             { Str $1 }
+| NONE                               { NoneLit }
 | id = IDENT                         { Var id }
+| f = IDENT LP args = separated_list(COMMA, expr) RP
+                                     { Call (f, args) }
+| LIST LP RANGE LP e = expr RP RP    { ListRange e }
+| LEN LP e = expr RP                 { Len e }
+| LSQ l = separated_list(COMMA, expr) RSQ
+                                     { ListLit l }
+| e1 = expr LSQ e2 = expr RSQ %prec LSQ
+                                     { Get (e1, e2) }
 | e1 = expr o = arith_op e2 = expr   { Binop (o, e1, e2) }
 | e1 = expr o = cmp_op e2 = expr     { Binop (o, e1, e2) }
 | e1 = expr AND e2 = expr            { Binop (And, e1, e2) }
@@ -93,6 +128,7 @@ expr:
 | MINUS { Sub }
 | TIMES { Mul }
 | DIV   { Div }
+| MOD   { Mod }
 ;
 
 %inline cmp_op:
@@ -103,6 +139,3 @@ expr:
 | GT   { Gt }
 | GE   { Ge }
 ;
-
-
-

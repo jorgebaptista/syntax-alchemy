@@ -8,10 +8,15 @@ Compiler from Arith mini-language to x86-64 assembly.
 
 A simple imperative language with:
 
-- [Arithmetic](docs/features/arithmetic.md) - integers, +, -, *, /
+- [Arithmetic](docs/features/arithmetic.md) - integers, +, -, *, /, %
 - [Variables](docs/features/variables.md) - global and local
+- [Type checking](docs/features/type-checking.md) - static inference, polymorphic let
 - [Booleans](docs/features/booleans.md) - comparisons and logical ops
-- [Control flow](docs/features/control-flow.md) - if/else, while loops
+- [Strings](docs/features/strings.md) - literals, concatenation, comparisons
+- [Control flow](docs/features/control-flow.md) - if/else, while, for loops
+- [Lists](docs/features/lists.md) - literals, indexing, len, concat, range
+- [Functions](docs/features/functions.md) - def/return, calls, recursion
+- [None](docs/features/none.md) - literal and default returns
 - `print` - output values
 
 **Example program:**
@@ -23,6 +28,16 @@ if x > 5 then
 else
   print 0
 ```
+
+**Functions (define before top-level statements):**
+
+```text
+def add(x, y) (
+  return x + y
+)
+print add(2, 3)
+```
+Output: `5`
 
 Compiles to x86-64 assembly (AT&T syntax).
 

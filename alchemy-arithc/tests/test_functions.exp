@@ -1,0 +1,14 @@
+# Function with two parameters
+def add(x, y) (
+  return x + y
+)
+
+# Function with if/else return
+def max2(a, b) (
+  if a > b then return a else return b
+)
+
+print add(2, 3)
+print max2(10, 4)
+set z = add(1, max2(3, 5))
+print z

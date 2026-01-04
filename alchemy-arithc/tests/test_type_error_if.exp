@@ -1,0 +1,2 @@
+# Type error: condition must be boolean
+if 1 then print 1 else print 0

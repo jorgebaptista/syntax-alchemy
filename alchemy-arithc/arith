@@ -3,8 +3,18 @@
 
 set -e
 
-ARITHC="_build/default/src/arithc.bc"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ARITHC_PATH="${ARITHC:-_build/default/src/arithc.bc}"
+
+resolve_arithc() {
+    if [[ "$ARITHC_PATH" = /* ]]; then
+        printf "%s\n" "$ARITHC_PATH"
+    else
+        printf "%s\n" "$SCRIPT_DIR/$ARITHC_PATH"
+    fi
+}
+
+ARITHC_RESOLVED="$(resolve_arithc)"
 
 usage() {
     cat << EOF
@@ -26,7 +36,7 @@ EOF
 }
 
 check_arithc() {
-    if [[ ! -f "$SCRIPT_DIR/$ARITHC" ]]; then
+    if [[ ! -f "$ARITHC_RESOLVED" ]]; then
         echo "Error: Compiler not built. Run 'dune build' first." >&2
         exit 1
     fi
@@ -37,7 +47,7 @@ compile_to_asm() {
     local base="${exp_file%.exp}"
     local asm_file="${base}.s"
     
-    "$SCRIPT_DIR/$ARITHC" "$exp_file"
+    "$ARITHC_RESOLVED" "$exp_file"
     echo "Generated: $asm_file"
 }
 

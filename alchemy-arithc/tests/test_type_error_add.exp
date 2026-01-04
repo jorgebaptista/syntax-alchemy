@@ -1,0 +1,2 @@
+# Type error: bool + int
+print true + 1

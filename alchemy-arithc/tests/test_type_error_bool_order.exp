@@ -1,0 +1,2 @@
+# Type error: ordering expects int/string/list
+print true < false

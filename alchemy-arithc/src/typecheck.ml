@@ -198,7 +198,7 @@ let ensure_addable t =
 
 let ensure_orderable t =
   match head (default_int t) with
-  | TInt | TString | TBool -> TBool
+  | TInt | TString -> TBool
   | TList _ -> TBool
   | t' -> type_error t' TInt
 

@@ -111,6 +111,9 @@ Output: `6`
 
 **Compilation:** stores the list pointer and length, then loops over indices.
 
+**Scope:** the loop variable exists only inside the loop body. If you need the
+last value after the loop, assign it to a variable defined before the loop.
+
 ## Expression Statements
 
 Any expression can be used as a statement; its value is ignored. This is

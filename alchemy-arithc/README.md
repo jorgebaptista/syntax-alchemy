@@ -12,6 +12,7 @@ A simple imperative language with:
 - [Variables](docs/features/variables.md) - global and local
 - [Booleans](docs/features/booleans.md) - comparisons and logical ops
 - [Control flow](docs/features/control-flow.md) - if/else, while loops
+- [Functions](docs/features/functions.md) - def/return, calls, recursion
 - `print` - output values
 
 **Example program:**
@@ -21,8 +22,18 @@ set x = 10
 if x > 5 then
   print x * (x + 1) / 2
 else
-  print 0
+print 0
 ```
+
+**Functions (define before top-level statements):**
+
+```text
+def add(x, y) (
+  return x + y
+)
+print add(2, 3)
+```
+Output: `5`
 
 Compiles to x86-64 assembly (AT&T syntax).
 

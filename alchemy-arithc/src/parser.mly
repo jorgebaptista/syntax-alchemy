@@ -12,9 +12,11 @@
 %token IF, THEN, ELSE
 %token WHILE, DO, DONE
 %token DEF, RETURN
+%token LEN
 %token AND, OR, NOT
 %token EOF
 %token LP RP
+%token LSQ RSQ
 %token COMMA
 %token PLUS MINUS TIMES DIV
 %token EQ EQEQ NEQ LT LE GT GE
@@ -31,6 +33,7 @@
 %left TIMES DIV
 %nonassoc NOT
 %nonassoc uminus
+%nonassoc LSQ
 
 /* Entry point para a gramática */
 %start prog
@@ -62,6 +65,8 @@ def:
 stmt:
 | SET id = IDENT EQ e = expr 
     { Set (id, e) }
+| SET id = IDENT LSQ i = expr RSQ EQ e = expr
+    { SetIndex (Var id, i, e) }
 | PRINT e = expr             
     { Print e }
 | IF e = expr THEN b1 = block ELSE b2 = block
@@ -91,6 +96,11 @@ expr:
 | id = IDENT                         { Var id }
 | f = IDENT LP args = separated_list(COMMA, expr) RP
                                      { Call (f, args) }
+| LEN LP e = expr RP                 { Len e }
+| LSQ l = separated_list(COMMA, expr) RSQ
+                                     { ListLit l }
+| e1 = expr LSQ e2 = expr RSQ %prec LSQ
+                                     { Get (e1, e2) }
 | e1 = expr o = arith_op e2 = expr   { Binop (o, e1, e2) }
 | e1 = expr o = cmp_op e2 = expr     { Binop (o, e1, e2) }
 | e1 = expr AND e2 = expr            { Binop (And, e1, e2) }
@@ -119,5 +129,3 @@ expr:
 | GT   { Gt }
 | GE   { Ge }
 ;
-
-

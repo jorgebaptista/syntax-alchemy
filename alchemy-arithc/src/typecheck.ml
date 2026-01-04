@@ -1,12 +1,13 @@
 open Format
 open Ast
 
-type typ = TInt | TBool | TFun of typ list * typ | TVar of tvar
+type typ = TInt | TBool | TList of typ | TFun of typ list * typ | TVar of tvar
 and tvar = { id : int; mutable def : typ option }
 
 let rec pp_typ fmt = function
   | TInt -> fprintf fmt "int"
   | TBool -> fprintf fmt "bool"
+  | TList t -> fprintf fmt "list[%a]" pp_typ t
   | TFun (args, ret) ->
       fprintf fmt "@[<2>(%a) -> %a@]" pp_typ_list args pp_typ ret
   | TVar v -> pp_tvar fmt v
@@ -47,6 +48,7 @@ let rec canon t =
   match head t with
   | TInt -> TInt
   | TBool -> TBool
+  | TList t -> TList (canon t)
   | TFun (args, ret) -> TFun (List.map canon args, canon ret)
   | TVar v -> TVar v
 
@@ -62,12 +64,14 @@ let rec occur v t =
   match head t with
   | TVar v' -> V.equal v v'
   | TInt | TBool -> false
+  | TList t -> occur v t
   | TFun (args, ret) -> List.exists (occur v) args || occur v ret
 
 let rec unify t1 t2 =
   match (head t1, head t2) with
   | TInt, TInt -> ()
   | TBool, TBool -> ()
+  | TList t1', TList t2' -> unify t1' t2'
   | TFun (args1, ret1), TFun (args2, ret2) ->
       if List.length args1 <> List.length args2 then type_error t1 t2
       else (
@@ -115,6 +119,32 @@ let rec infer_expr env locals ~allow_globals = function
       let ret_ty = TVar (V.create ()) in
       unify fn_ty (TFun (arg_tys, ret_ty));
       ret_ty
+  | ListLit elems ->
+      let elem_ty =
+        match elems with
+        | [] -> TVar (V.create ())
+        | e1 :: rest ->
+            let t1 = infer_expr env locals ~allow_globals e1 in
+            List.iter
+              (fun e ->
+                let t = infer_expr env locals ~allow_globals e in
+                unify t1 t)
+              rest;
+            t1
+      in
+      TList elem_ty
+  | Get (e_list, e_index) ->
+      let t_list = infer_expr env locals ~allow_globals e_list in
+      let t_index = infer_expr env locals ~allow_globals e_index in
+      ignore (expect t_index TInt);
+      let elem_ty = TVar (V.create ()) in
+      unify t_list (TList elem_ty);
+      elem_ty
+  | Len e ->
+      let t = infer_expr env locals ~allow_globals e in
+      let elem_ty = TVar (V.create ()) in
+      unify t (TList elem_ty);
+      TInt
   | Unop (Neg, e) ->
       let t = infer_expr env locals ~allow_globals e in
       ignore (expect t TInt);
@@ -184,6 +214,15 @@ let rec check_stmt env locals ~allow_globals ~ret_ty = function
               locals
         in
         (env, locals)
+  | SetIndex (e_list, e_index, e_value) ->
+      let t_list = infer_expr env locals ~allow_globals e_list in
+      let t_index = infer_expr env locals ~allow_globals e_index in
+      let t_value = infer_expr env locals ~allow_globals e_value in
+      ignore (expect t_index TInt);
+      let elem_ty = TVar (V.create ()) in
+      unify t_list (TList elem_ty);
+      unify t_value elem_ty;
+      (env, locals)
   | Print e ->
       ignore (infer_expr env locals ~allow_globals e);
       (env, locals)

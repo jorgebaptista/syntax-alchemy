@@ -63,6 +63,37 @@ let compile_expr ~frame_size ~allow_globals env next depth expr =
           if n + pad = 0 then nop else addq (imm (8 * (n + pad))) !%rsp
         in
         code_pad ++ code_args ++ call (func_label f) ++ cleanup ++ pushq !%rax
+    | ListLit elems ->
+        let n = List.length elems in
+        let rec compile_elems depth = function
+          | [] -> nop
+          | e :: rest -> comprec env next depth e ++ compile_elems (depth + 1) rest
+        in
+        let code_elems = compile_elems depth elems in
+        let pad = if (depth + n) mod 2 = 0 then 0 else 1 in
+        let code_pad = if pad = 1 then subq (imm 8) !%rsp else nop in
+        let code_unpad = if pad = 1 then addq (imm 8) !%rsp else nop in
+        let alloc_bytes = (n + 1) * 8 in
+        let code_alloc = movq (imm alloc_bytes) !%rdi ++ call "malloc" in
+        let code_len = movq (imm n) (ind rax) in
+        let rec store i =
+          if i < 0 then nop
+          else
+            popq rdx
+            ++ movq !%rdx (ind ~ofs:(8 * (i + 1)) rax)
+            ++ store (i - 1)
+        in
+        code_elems ++ code_pad ++ code_alloc ++ code_unpad ++ code_len
+        ++ store (n - 1) ++ pushq !%rax
+    | Get (e_list, e_index) ->
+        comprec env next depth e_list
+        ++ comprec env next (depth + 1) e_index
+        ++ popq rdi ++ popq rax
+        ++ movq (ind ~ofs:8 ~index:rdi ~scale:8 rax) !%rax
+        ++ pushq !%rax
+    | Len e ->
+        comprec env next depth e ++ popq rax ++ movq (ind rax) !%rax
+        ++ pushq !%rax
     | Unop (Neg, e) ->
         (* Compile expression, negate result *)
         comprec env next depth e ++ popq rax ++ negq !%rax ++ pushq !%rax
@@ -142,6 +173,9 @@ let compile_expr ~frame_size ~allow_globals env next depth expr =
 let compile_expr_main frame_size e =
   compile_expr ~frame_size ~allow_globals:true StrMap.empty 0 0 e
 
+let compile_expr_main_depth frame_size depth e =
+  compile_expr ~frame_size ~allow_globals:true StrMap.empty 0 depth e
+
 (* Compilação de uma instrução (main) *)
 let rec compile_instr_main frame_size = function
   | Set (x, e) ->
@@ -153,6 +187,12 @@ let rec compile_instr_main frame_size = function
       (* Pop value from stack and store in global variable *)
       popq rax
       ++ movq !%rax (lab x)
+  | SetIndex (e_list, e_index, e_value) ->
+      compile_expr_main_depth frame_size 0 e_list
+      ++ compile_expr_main_depth frame_size 1 e_index
+      ++ compile_expr_main_depth frame_size 2 e_value
+      ++ popq rdx ++ popq rdi ++ popq rax
+      ++ movq !%rdx (ind ~ofs:8 ~index:rdi ~scale:8 rax)
   | Print e ->
       (* Compile expression (result will be on stack) *)
       compile_expr_main frame_size e
@@ -216,6 +256,15 @@ let rec compile_stmt_fn frame_size ret_label env next = function
         let offset = -next - 8 in
         let env = StrMap.add x offset env in
         (code ++ movq !%rax (ind ~ofs:offset rbp), env, next + 8))
+  | SetIndex (e_list, e_index, e_value) ->
+      let code =
+        compile_expr ~frame_size ~allow_globals:false env next 0 e_list
+        ++ compile_expr ~frame_size ~allow_globals:false env next 1 e_index
+        ++ compile_expr ~frame_size ~allow_globals:false env next 2 e_value
+        ++ popq rdx ++ popq rdi ++ popq rax
+        ++ movq !%rdx (ind ~ofs:8 ~index:rdi ~scale:8 rax)
+      in
+      (code, env, next)
   | Print e ->
       let code =
         compile_expr ~frame_size ~allow_globals:false env next 0 e

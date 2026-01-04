@@ -6,6 +6,7 @@ and def = string * string list * stmt list
 
 and stmt =
   | Set of string * expr (* set x = e *)
+  | SetIndex of expr * expr * expr (* set a[i] = e *)
   | Print of expr (* print e *)
   | If of expr * stmt list * stmt list (* if e then stmts else stmts *)
   | While of expr * stmt list (* while e do stmts done *)
@@ -20,6 +21,9 @@ and expr =
   | Letin of string * expr * expr (* let x = e1 in e2 *)
   | IfExpr of expr * expr * expr (* if e1 then e2 else e3 (expression) *)
   | Call of string * expr list (* function call f(e1, e2, ...) *)
+  | ListLit of expr list (* [e1, e2, ...] *)
+  | Get of expr * expr (* e1[e2] *)
+  | Len of expr (* len(e) *)
 
 and binop =
   | Add

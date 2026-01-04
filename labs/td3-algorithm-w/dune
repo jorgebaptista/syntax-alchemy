@@ -1,0 +1,9 @@
+(executable
+ (name td3)
+ (modules td3)
+ (promote (until-clean))
+ (flags ()))
+
+(rule
+ (alias runtest)
+ (action (run %{exe:td3.exe})))

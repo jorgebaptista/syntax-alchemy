@@ -12,6 +12,7 @@ Printing booleans shows `True` or `False`.
 ## Conditions
 
 `if`, `while`, and boolean operators require a boolean condition. There is no
+implicit truthiness or automatic conversion from other types to booleans.
 
 ## Comparison Operators
 

@@ -26,7 +26,7 @@ set x = 10
 if x > 5 then
   print x * (x + 1) / 2
 else
-print 0
+  print 0
 ```
 
 **Functions (define before top-level statements):**

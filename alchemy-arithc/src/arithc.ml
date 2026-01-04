@@ -70,7 +70,7 @@ let () =
 
     (* Compilamos a árvore de sintaxe abstrata p.
         O código máquina resultante de desta transformação deve ser
-	excrito no ficheiro target  ofile. *)
+	escrito no ficheiro target  ofile. *)
     Compile.compile_program p !ofile
   with
   | Lexer.Lexing_error c ->
@@ -87,7 +87,7 @@ let () =
       eprintf "Compilation Error: The variable %s is not defined@." s;
       exit 1
   | Typecheck.FuncUndef s ->
-      eprintf "Compilation Error: The function %s is not definded@." s;
+      eprintf "Compilation Error: The function %s is not defined@." s;
       exit 1
   | Typecheck.FuncRedef s ->
       eprintf "Compilation Error: The function %s is already defined@." s;
@@ -106,5 +106,5 @@ let () =
       exit 1
   | Compile.VarUndef s ->
       (* Erro derivado de um mau uso de variável durante a compilação *)
-      eprintf "Compilation Error: The variable %s is not definded@." s;
+      eprintf "Compilation Error: The variable %s is not defined@." s;
       exit 1

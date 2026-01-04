@@ -7,6 +7,9 @@
    test_logical.exp test_logical.expected test_loops.exp test_loops.expected
    test_functions.exp test_functions.expected test_recursion.exp
    test_recursion.expected test_type_error_add.exp test_type_error_add.expected
-   test_type_error_if.exp test_type_error_if.expected)
+   test_type_error_if.exp test_type_error_if.expected test_type_error_fun_arity.exp
+   test_type_error_fun_arity.expected test_type_error_fun_arg.exp
+   test_type_error_fun_arg.expected test_return_outside.exp
+   test_return_outside.expected)
  (action
   (run bash %{dep:run_tests.sh} %{dep:../arith} %{exe:../src/arithc.exe})))

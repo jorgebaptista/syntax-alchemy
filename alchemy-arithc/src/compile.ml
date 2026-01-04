@@ -334,6 +334,7 @@ let compile_program (defs, stmts) ofile =
       (fun x _ l -> label x ++ dquad [ 1 ] ++ l)
       genv
       (label ".Sprint_int" ++ string "%d\n")
+    ++ inline "\t.section .note.GNU-stack,\"\",@progbits\n"
   in
   let p = { text; data } in
   let f = open_out ofile in

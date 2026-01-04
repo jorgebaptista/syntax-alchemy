@@ -49,7 +49,6 @@ let str_none_label = ".Snone"
 let str_lbrack_label = ".Slbrack"
 let str_rbrack_label = ".Srbrack"
 let str_comma_label = ".Scomma"
-
 let string_labels : (string, string) Hashtbl.t = Hashtbl.create 17
 let string_data : (string * string) list ref = ref []
 
@@ -105,9 +104,7 @@ and gen_print_list elem lbl =
   let lbl_done = new_label ".Lplist_done" in
   let lbl_sep = new_label ".Lplist_sep" in
   let elem_print = print_label_for_type elem in
-  label lbl
-  ++ pushq !%rbp
-  ++ movq !%rsp !%rbp
+  label lbl ++ pushq !%rbp ++ movq !%rsp !%rbp
   ++ subq (imm frame) !%rsp
   ++ movq !%rdi (ind ~ofs:list_ofs rbp)
   ++ movq (ind rdi) !%rax
@@ -116,15 +113,11 @@ and gen_print_list elem lbl =
   ++ leaq (lab str_lbrack_label) rdi
   ++ call "print_string"
   ++ movq (ind ~ofs:len_ofs rbp) !%rax
-  ++ testq !%rax !%rax
-  ++ jz lbl_done
-  ++ label lbl_loop
+  ++ testq !%rax !%rax ++ jz lbl_done ++ label lbl_loop
   ++ movq (ind ~ofs:idx_ofs rbp) !%rax
-  ++ testq !%rax !%rax
-  ++ jz lbl_sep
+  ++ testq !%rax !%rax ++ jz lbl_sep
   ++ leaq (lab str_comma_label) rdi
-  ++ call "print_string"
-  ++ label lbl_sep
+  ++ call "print_string" ++ label lbl_sep
   ++ movq (ind ~ofs:list_ofs rbp) !%rax
   ++ movq (ind ~ofs:idx_ofs rbp) !%rdi
   ++ movq (ind ~ofs:8 ~index:rdi ~scale:8 rax) !%rdi
@@ -134,12 +127,9 @@ and gen_print_list elem lbl =
   ++ movq !%rax (ind ~ofs:idx_ofs rbp)
   ++ movq (ind ~ofs:idx_ofs rbp) !%rax
   ++ cmpq (ind ~ofs:len_ofs rbp) !%rax
-  ++ jl lbl_loop
-  ++ label lbl_done
+  ++ jl lbl_loop ++ label lbl_done
   ++ leaq (lab str_rbrack_label) rdi
-  ++ call "print_string"
-  ++ movq !%rbp !%rsp
-  ++ popq rbp ++ ret
+  ++ call "print_string" ++ movq !%rbp !%rsp ++ popq rbp ++ ret
 
 let rec ensure_compare_list elem =
   let elem = Tc.canon elem in
@@ -169,16 +159,16 @@ and gen_compare_list elem lbl =
         cmpq !%rdi !%rax ++ jl lbl_lt ++ jg lbl_gt
     | Tc.TString ->
         movq !%rdi !%rsi ++ movq !%rax !%rdi ++ call "strcmp"
-        ++ cmpl (imm 0) !%eax ++ jl lbl_lt ++ jg lbl_gt
+        ++ cmpl (imm 0) !%eax
+        ++ jl lbl_lt ++ jg lbl_gt
     | Tc.TList inner ->
         let inner_lbl = ensure_compare_list inner in
         movq !%rdi !%rsi ++ movq !%rax !%rdi ++ call inner_lbl
-        ++ cmpq (imm 0) !%rax ++ jl lbl_lt ++ jg lbl_gt
+        ++ cmpq (imm 0) !%rax
+        ++ jl lbl_lt ++ jg lbl_gt
     | _ -> failwith "unsupported list element compare type"
   in
-  label lbl
-  ++ pushq !%rbp
-  ++ movq !%rsp !%rbp
+  label lbl ++ pushq !%rbp ++ movq !%rsp !%rbp
   ++ subq (imm frame) !%rsp
   ++ movq !%rdi (ind ~ofs:list1_ofs rbp)
   ++ movq !%rsi (ind ~ofs:list2_ofs rbp)
@@ -204,17 +194,16 @@ and gen_compare_list elem lbl =
   ++ movq (ind ~ofs:idx_ofs rbp) !%rax
   ++ incq !%rax
   ++ movq !%rax (ind ~ofs:idx_ofs rbp)
-  ++ jmp lbl_loop
-  ++ label lbl_len
+  ++ jmp lbl_loop ++ label lbl_len
   ++ movq (ind ~ofs:len1_ofs rbp) !%rax
   ++ cmpq (ind ~ofs:len2_ofs rbp) !%rax
   ++ jl lbl_lt ++ jg lbl_gt
-  ++ movq (imm 0) !%rax ++ jmp lbl_return
-  ++ label lbl_lt ++ movq (imm (-1)) !%rax ++ jmp lbl_return
-  ++ label lbl_gt ++ movq (imm 1) !%rax
-  ++ label lbl_return
-  ++ movq !%rbp !%rsp
-  ++ popq rbp ++ ret
+  ++ movq (imm 0) !%rax
+  ++ jmp lbl_return ++ label lbl_lt
+  ++ movq (imm (-1)) !%rax
+  ++ jmp lbl_return ++ label lbl_gt
+  ++ movq (imm 1) !%rax
+  ++ label lbl_return ++ movq !%rbp !%rsp ++ popq rbp ++ ret
 
 (* Compilação de uma expressão *)
 let compile_expr types ~frame_size ~allow_globals env tlocals next depth expr =
@@ -231,8 +220,7 @@ let compile_expr types ~frame_size ~allow_globals env tlocals next depth expr =
     | Str s ->
         let lbl = add_string_literal s in
         pushq (ilab lbl)
-    | NoneLit ->
-        pushq (imm 0)
+    | NoneLit -> pushq (imm 0)
     | Var x ->
         (* Check if it's a local variable *)
         if StrMap.mem x env then
@@ -250,8 +238,7 @@ let compile_expr types ~frame_size ~allow_globals env tlocals next depth expr =
         let rec compile_args depth = function
           | [] -> nop
           | a :: rest ->
-              comprec env tlocals next depth a
-              ++ compile_args (depth + 1) rest
+              comprec env tlocals next depth a ++ compile_args (depth + 1) rest
         in
         let code_args = compile_args (depth + pad) args in
         let cleanup =
@@ -263,8 +250,7 @@ let compile_expr types ~frame_size ~allow_globals env tlocals next depth expr =
         let rec compile_elems depth = function
           | [] -> nop
           | e :: rest ->
-              comprec env tlocals next depth e
-              ++ compile_elems (depth + 1) rest
+              comprec env tlocals next depth e ++ compile_elems (depth + 1) rest
         in
         let code_elems = compile_elems depth elems in
         let pad = if (depth + n) mod 2 = 0 then 0 else 1 in
@@ -276,12 +262,11 @@ let compile_expr types ~frame_size ~allow_globals env tlocals next depth expr =
         let rec store i =
           if i < 0 then nop
           else
-            popq rdx
-            ++ movq !%rdx (ind ~ofs:(8 * (i + 1)) rax)
-            ++ store (i - 1)
+            popq rdx ++ movq !%rdx (ind ~ofs:(8 * (i + 1)) rax) ++ store (i - 1)
         in
         code_elems ++ code_pad ++ code_alloc ++ code_unpad ++ code_len
-        ++ store (n - 1) ++ pushq !%rax
+        ++ store (n - 1)
+        ++ pushq !%rax
     | ListRange e ->
         let n_ofs = alloc_temp frame_size in
         let list_ofs = alloc_temp frame_size in
@@ -312,8 +297,7 @@ let compile_expr types ~frame_size ~allow_globals env tlocals next depth expr =
         ++ movq (ind ~ofs:idx_ofs rbp) !%rax
         ++ incq !%rax
         ++ movq !%rax (ind ~ofs:idx_ofs rbp)
-        ++ jmp lbl_loop
-        ++ label lbl_end
+        ++ jmp lbl_loop ++ label lbl_end
         ++ movq (ind ~ofs:list_ofs rbp) !%rax
         ++ pushq !%rax
     | Get (e_list, e_index) ->
@@ -324,33 +308,42 @@ let compile_expr types ~frame_size ~allow_globals env tlocals next depth expr =
         ++ pushq !%rax
     | Len e ->
         comprec env tlocals next depth e
-        ++ popq rax ++ movq (ind rax) !%rax ++ pushq !%rax
+        ++ popq rax
+        ++ movq (ind rax) !%rax
+        ++ pushq !%rax
     | Unop (Neg, e) ->
         (* Compile expression, negate result *)
-        comprec env tlocals next depth e ++ popq rax ++ negq !%rax
-        ++ pushq !%rax
+        comprec env tlocals next depth e
+        ++ popq rax ++ negq !%rax ++ pushq !%rax
     | Unop (Not, e) ->
         (* Compile expression, logical not: 0 -> 1, nonzero -> 0 *)
-        comprec env tlocals next depth e ++ popq rax ++ testq !%rax !%rax
-        ++ sete !%al ++ movzbq !%al rax ++ pushq !%rax
+        comprec env tlocals next depth e
+        ++ popq rax ++ testq !%rax !%rax ++ sete !%al ++ movzbq !%al rax
+        ++ pushq !%rax
     | Binop (And, e1, e2) ->
         (* Short-circuit AND: if e1 is false, don't evaluate e2 *)
         let lbl_false = new_label ".Land_false" in
         let lbl_end = new_label ".Land_end" in
-        comprec env tlocals next depth e1 ++ popq rax ++ testq !%rax !%rax
-        ++ jz lbl_false
-        ++ comprec env tlocals next depth e2 ++ popq rax ++ testq !%rax !%rax
-        ++ jz lbl_false ++ pushq (imm 1) ++ jmp lbl_end
-        ++ label lbl_false ++ pushq (imm 0) ++ label lbl_end
+        comprec env tlocals next depth e1
+        ++ popq rax ++ testq !%rax !%rax ++ jz lbl_false
+        ++ comprec env tlocals next depth e2
+        ++ popq rax ++ testq !%rax !%rax ++ jz lbl_false
+        ++ pushq (imm 1)
+        ++ jmp lbl_end ++ label lbl_false
+        ++ pushq (imm 0)
+        ++ label lbl_end
     | Binop (Or, e1, e2) ->
         (* Short-circuit OR: if e1 is true, don't evaluate e2 *)
         let lbl_true = new_label ".Lor_true" in
         let lbl_end = new_label ".Lor_end" in
-        comprec env tlocals next depth e1 ++ popq rax ++ testq !%rax !%rax
-        ++ jnz lbl_true
-        ++ comprec env tlocals next depth e2 ++ popq rax ++ testq !%rax !%rax
-        ++ jnz lbl_true ++ pushq (imm 0) ++ jmp lbl_end
-        ++ label lbl_true ++ pushq (imm 1) ++ label lbl_end
+        comprec env tlocals next depth e1
+        ++ popq rax ++ testq !%rax !%rax ++ jnz lbl_true
+        ++ comprec env tlocals next depth e2
+        ++ popq rax ++ testq !%rax !%rax ++ jnz lbl_true
+        ++ pushq (imm 0)
+        ++ jmp lbl_end ++ label lbl_true
+        ++ pushq (imm 1)
+        ++ label lbl_end
     | Binop (Add, e1, e2) -> (
         let t = expr_type types tlocals ~allow_globals e1 in
         comprec env tlocals next depth e1
@@ -361,32 +354,30 @@ let compile_expr types ~frame_size ~allow_globals env tlocals next depth expr =
             popq rdi ++ popq rax ++ addq !%rdi !%rax ++ pushq !%rax
         | Tc.TString ->
             popq rsi ++ popq rdi
-            ++ call_aligned depth "string_concat" ++ pushq !%rax
+            ++ call_aligned depth "string_concat"
+            ++ pushq !%rax
         | Tc.TList _ ->
             popq rsi ++ popq rdi
-            ++ call_aligned depth "list_concat" ++ pushq !%rax
+            ++ call_aligned depth "list_concat"
+            ++ pushq !%rax
         | _ -> assert false)
     | Binop (Sub, e1, e2) ->
         comprec env tlocals next depth e1
         ++ comprec env tlocals next (depth + 1) e2
-        ++ popq rdi ++ popq rax
-        ++ subq !%rdi !%rax ++ pushq !%rax
+        ++ popq rdi ++ popq rax ++ subq !%rdi !%rax ++ pushq !%rax
     | Binop (Mul, e1, e2) ->
         comprec env tlocals next depth e1
         ++ comprec env tlocals next (depth + 1) e2
-        ++ popq rdi ++ popq rax
-        ++ imulq !%rdi !%rax ++ pushq !%rax
+        ++ popq rdi ++ popq rax ++ imulq !%rdi !%rax ++ pushq !%rax
     | Binop (Div, e1, e2) ->
         comprec env tlocals next depth e1
         ++ comprec env tlocals next (depth + 1) e2
-        ++ popq rdi ++ popq rax
-        ++ cqto ++ idivq !%rdi ++ pushq !%rax
+        ++ popq rdi ++ popq rax ++ cqto ++ idivq !%rdi ++ pushq !%rax
     | Binop (Mod, e1, e2) ->
         comprec env tlocals next depth e1
         ++ comprec env tlocals next (depth + 1) e2
-        ++ popq rdi ++ popq rax
-        ++ cqto ++ idivq !%rdi ++ pushq !%rdx
-    | Binop ((Eq | Neq | Lt | Le | Gt | Ge) as op, e1, e2) -> (
+        ++ popq rdi ++ popq rax ++ cqto ++ idivq !%rdi ++ pushq !%rdx
+    | Binop (((Eq | Neq | Lt | Le | Gt | Ge) as op), e1, e2) -> (
         let t = expr_type types tlocals ~allow_globals e1 in
         let setcc =
           match op with
@@ -404,22 +395,20 @@ let compile_expr types ~frame_size ~allow_globals env tlocals next depth expr =
             ++ comprec env tlocals next (depth + 1) e2
             ++ popq rsi ++ popq rdi
             ++ call_aligned depth "strcmp"
-            ++ cmpl (imm 0) !%eax ++ setcc ++ movzbq !%al rax
-            ++ pushq !%rax
+            ++ cmpl (imm 0) !%eax
+            ++ setcc ++ movzbq !%al rax ++ pushq !%rax
         | Tc.TList elem ->
             let cmp_lbl = ensure_compare_list elem in
             comprec env tlocals next depth e1
             ++ comprec env tlocals next (depth + 1) e2
-            ++ popq rsi ++ popq rdi
-            ++ call_aligned depth cmp_lbl
-            ++ cmpq (imm 0) !%rax ++ setcc ++ movzbq !%al rax
-            ++ pushq !%rax
+            ++ popq rsi ++ popq rdi ++ call_aligned depth cmp_lbl
+            ++ cmpq (imm 0) !%rax
+            ++ setcc ++ movzbq !%al rax ++ pushq !%rax
         | _ ->
             comprec env tlocals next depth e1
             ++ comprec env tlocals next (depth + 1) e2
-            ++ popq rdi ++ popq rax
-            ++ cmpq !%rdi !%rax ++ setcc ++ movzbq !%al rax
-            ++ pushq !%rax)
+            ++ popq rdi ++ popq rax ++ cmpq !%rdi !%rax ++ setcc
+            ++ movzbq !%al rax ++ pushq !%rax)
     | Letin (x, e1, e2) ->
         (* Allocate space for local variable if needed *)
         if !frame_size = next then frame_size := 8 + !frame_size;
@@ -432,25 +421,30 @@ let compile_expr types ~frame_size ~allow_globals env tlocals next depth expr =
         ++ movq !%rax (ind ~ofs:(-next - 8) rbp)
         ++
         (* Compile e2 with x in environment, pointing to its stack location *)
-        comprec (StrMap.add x (-next - 8) env)
-          (Tc.StrMap.add x t1 tlocals) (next + 8) depth e2
+        comprec
+          (StrMap.add x (-next - 8) env)
+          (Tc.StrMap.add x t1 tlocals)
+          (next + 8) depth e2
     | IfExpr (cond, e1, e2) ->
         (* Compile conditional expression: if cond then e1 else e2 *)
         let lbl_else = new_label ".Lelse" in
         let lbl_end = new_label ".Lendif" in
-        comprec env tlocals next depth cond ++ popq rax ++ testq !%rax !%rax
-        ++ jz lbl_else ++ comprec env tlocals next depth e1 ++ jmp lbl_end
-        ++ label lbl_else ++ comprec env tlocals next depth e2 ++ label lbl_end
+        comprec env tlocals next depth cond
+        ++ popq rax ++ testq !%rax !%rax ++ jz lbl_else
+        ++ comprec env tlocals next depth e1
+        ++ jmp lbl_end ++ label lbl_else
+        ++ comprec env tlocals next depth e2
+        ++ label lbl_end
   in
   comprec env tlocals next depth expr
 
 let compile_expr_main types frame_size e =
-  compile_expr types ~frame_size ~allow_globals:true StrMap.empty Tc.StrMap.empty
-    0 0 e
+  compile_expr types ~frame_size ~allow_globals:true StrMap.empty
+    Tc.StrMap.empty 0 0 e
 
 let compile_expr_main_depth types frame_size depth e =
-  compile_expr types ~frame_size ~allow_globals:true StrMap.empty Tc.StrMap.empty
-    0 depth e
+  compile_expr types ~frame_size ~allow_globals:true StrMap.empty
+    Tc.StrMap.empty 0 depth e
 
 let compile_print types ~frame_size ~allow_globals env tlocals next expr =
   let t = expr_type types tlocals ~allow_globals expr in
@@ -478,14 +472,13 @@ let rec compile_instr_main types frame_size = function
   | Print e ->
       compile_print types ~frame_size ~allow_globals:true StrMap.empty
         Tc.StrMap.empty 0 e
-  | Expr e ->
-      compile_expr_main types frame_size e ++ popq rax
+  | Expr e -> compile_expr_main types frame_size e ++ popq rax
   | If (cond, then_stmts, else_stmts) ->
       let lbl_else = new_label ".Lelse" in
       let lbl_end = new_label ".Lendif" in
       (* Compile condition *)
-      compile_expr_main types frame_size cond ++ popq rax ++ testq !%rax !%rax
-      ++ jz lbl_else
+      compile_expr_main types frame_size cond
+      ++ popq rax ++ testq !%rax !%rax ++ jz lbl_else
       ++
       (* Then branch *)
       compile_block_main types frame_size then_stmts
@@ -502,8 +495,8 @@ let rec compile_instr_main types frame_size = function
       label lbl_start
       ++
       (* Compile condition *)
-      compile_expr_main types frame_size cond ++ popq rax ++ testq !%rax !%rax
-      ++ jz lbl_end
+      compile_expr_main types frame_size cond
+      ++ popq rax ++ testq !%rax !%rax ++ jz lbl_end
       ++
       (* Body *)
       compile_block_main types frame_size body
@@ -521,8 +514,7 @@ let rec compile_instr_main types frame_size = function
       let idx_ofs = alloc_temp frame_size in
       let list_code = compile_expr_main types frame_size e_list in
       if not (Hashtbl.mem genv name) then Hashtbl.add genv name ();
-      list_code
-      ++ popq rax
+      list_code ++ popq rax
       ++ movq !%rax (ind ~ofs:list_ofs rbp)
       ++ movq (ind ~ofs:list_ofs rbp) !%rax
       ++ movq (ind rax) !%rax
@@ -540,8 +532,7 @@ let rec compile_instr_main types frame_size = function
       ++ movq (ind ~ofs:idx_ofs rbp) !%rax
       ++ incq !%rax
       ++ movq !%rax (ind ~ofs:idx_ofs rbp)
-      ++ jmp lbl_start
-      ++ label lbl_end
+      ++ jmp lbl_start ++ label lbl_end
   | Return _ -> failwith "return used outside of a function"
 
 and compile_block_main types frame_size stmts =
@@ -571,18 +562,15 @@ let rec compile_stmt_fn types frame_size ret_label env tlocals next = function
         if !frame_size = next then frame_size := 8 + !frame_size;
         let offset = -next - 8 in
         let env = StrMap.add x offset env in
-        ( code ++ movq !%rax (ind ~ofs:offset rbp),
-          env,
-          tlocals,
-          next + 8 ))
+        (code ++ movq !%rax (ind ~ofs:offset rbp), env, tlocals, next + 8))
   | SetIndex (e_list, e_index, e_value) ->
       let code =
         compile_expr types ~frame_size ~allow_globals:false env tlocals next 0
           e_list
-        ++ compile_expr types ~frame_size ~allow_globals:false env tlocals next 1
-             e_index
-        ++ compile_expr types ~frame_size ~allow_globals:false env tlocals next 2
-             e_value
+        ++ compile_expr types ~frame_size ~allow_globals:false env tlocals next
+             1 e_index
+        ++ compile_expr types ~frame_size ~allow_globals:false env tlocals next
+             2 e_value
         ++ popq rdx ++ popq rdi ++ popq rax
         ++ movq !%rdx (ind ~ofs:8 ~index:rdi ~scale:8 rax)
       in
@@ -634,7 +622,8 @@ let rec compile_stmt_fn types frame_size ret_label env tlocals next = function
       let body_code, env, tlocals, next =
         compile_block_fn types frame_size ret_label env tlocals next body
       in
-      ( label lbl_start ++ cond_code ++ body_code ++ jmp lbl_start ++ label lbl_end,
+      ( label lbl_start ++ cond_code ++ body_code ++ jmp lbl_start
+        ++ label lbl_end,
         env,
         tlocals,
         next )
@@ -649,7 +638,9 @@ let rec compile_stmt_fn types frame_size ret_label env tlocals next = function
             (ofs, next1, StrMap.add name ofs env_before)
       in
       let tlocals_before = tlocals in
-      let list_ty = expr_type types tlocals_before ~allow_globals:false e_list in
+      let list_ty =
+        expr_type types tlocals_before ~allow_globals:false e_list
+      in
       let elem_ty =
         match Tc.canon list_ty with
         | Tc.TList t -> t
@@ -678,8 +669,8 @@ let rec compile_stmt_fn types frame_size ret_label env tlocals next = function
         ++ movq (imm 0) (ind ~ofs:idx_ofs rbp)
       in
       let body_code, env, tlocals_after, next =
-        compile_block_fn types frame_size ret_label env_after tlocals_after next4
-          body
+        compile_block_fn types frame_size ret_label env_after tlocals_after
+          next4 body
       in
       let loop_code =
         label lbl_start
@@ -713,19 +704,17 @@ let compile_function types (name, params, body) =
   let nparams = List.length params in
   let fn_ty = Tc.lookup_fun types name in
   let param_tys =
-    match fn_ty with
-    | Tc.TFun (args, _ret) -> args
-    | _ -> assert false
+    match fn_ty with Tc.TFun (args, _ret) -> args | _ -> assert false
   in
   let env =
-    List.mapi
-      (fun i param -> (param, 16 + (8 * (nparams - i - 1))))
-      params
-    |> List.fold_left (fun acc (param, ofs) -> StrMap.add param ofs acc)
+    List.mapi (fun i param -> (param, 16 + (8 * (nparams - i - 1)))) params
+    |> List.fold_left
+         (fun acc (param, ofs) -> StrMap.add param ofs acc)
          StrMap.empty
   in
   let tlocals =
-    List.fold_left2 (fun acc param ty -> Tc.StrMap.add param ty acc)
+    List.fold_left2
+      (fun acc param ty -> Tc.StrMap.add param ty acc)
       Tc.StrMap.empty params param_tys
   in
   let body_code, _env, _tlocals, _next =
@@ -733,33 +722,33 @@ let compile_function types (name, params, body) =
   in
   let size = align_frame_size !frame_size in
   label (func_label name)
-  ++ pushq !%rbp ++ movq !%rsp !%rbp ++ subq (imm size) !%rsp
+  ++ pushq !%rbp ++ movq !%rsp !%rbp
+  ++ subq (imm size) !%rsp
   ++ body_code
   ++ movq (imm 0) !%rax
-  ++ label ret_label
-  ++ movq !%rbp !%rsp ++ popq rbp ++ ret
+  ++ label ret_label ++ movq !%rbp !%rsp ++ popq rbp ++ ret
 
 let print_int_text =
-  label "print_int" ++ pushq !%rbp ++ movq !%rsp !%rbp
-  ++ movq !%rdi !%rsi ++ leaq (lab fmt_int_label) rdi
-  ++ movq (imm 0) !%rax ++ call "printf"
-  ++ movq !%rbp !%rsp ++ popq rbp ++ ret
+  label "print_int" ++ pushq !%rbp ++ movq !%rsp !%rbp ++ movq !%rdi !%rsi
+  ++ leaq (lab fmt_int_label) rdi
+  ++ movq (imm 0) !%rax
+  ++ call "printf" ++ movq !%rbp !%rsp ++ popq rbp ++ ret
 
 let print_string_text =
-  label "print_string" ++ pushq !%rbp ++ movq !%rsp !%rbp
-  ++ movq !%rdi !%rsi ++ leaq (lab fmt_str_label) rdi
-  ++ movq (imm 0) !%rax ++ call "printf"
-  ++ movq !%rbp !%rsp ++ popq rbp ++ ret
+  label "print_string" ++ pushq !%rbp ++ movq !%rsp !%rbp ++ movq !%rdi !%rsi
+  ++ leaq (lab fmt_str_label) rdi
+  ++ movq (imm 0) !%rax
+  ++ call "printf" ++ movq !%rbp !%rsp ++ popq rbp ++ ret
 
 let print_none_text =
   label "print_none" ++ pushq !%rbp ++ movq !%rsp !%rbp
-  ++ leaq (lab str_none_label) rdi ++ call "print_string"
-  ++ movq !%rbp !%rsp ++ popq rbp ++ ret
+  ++ leaq (lab str_none_label) rdi
+  ++ call "print_string" ++ movq !%rbp !%rsp ++ popq rbp ++ ret
 
 let print_newline_text =
   label "print_newline" ++ pushq !%rbp ++ movq !%rsp !%rbp
-  ++ movq (imm 10) !%rdi ++ call "putchar"
-  ++ movq !%rbp !%rsp ++ popq rbp ++ ret
+  ++ movq (imm 10) !%rdi
+  ++ call "putchar" ++ movq !%rbp !%rsp ++ popq rbp ++ ret
 
 let string_concat_text =
   let frame = align_frame_size 40 in
@@ -781,8 +770,7 @@ let string_concat_text =
   ++ movq (ind ~ofs:len1_ofs rbp) !%rax
   ++ addq (ind ~ofs:len2_ofs rbp) !%rax
   ++ addq (imm 1) !%rax
-  ++ movq !%rax !%rdi
-  ++ call "malloc"
+  ++ movq !%rax !%rdi ++ call "malloc"
   ++ movq !%rax (ind ~ofs:buf_ofs rbp)
   ++ movq (ind ~ofs:buf_ofs rbp) !%rdi
   ++ movq (ind ~ofs:s1_ofs rbp) !%rsi
@@ -822,8 +810,7 @@ let list_concat_text =
   ++ movq !%rax (ind ~ofs:total_ofs rbp)
   ++ addq (imm 1) !%rax
   ++ shlq (imm 3) !%rax
-  ++ movq !%rax !%rdi
-  ++ call "malloc"
+  ++ movq !%rax !%rdi ++ call "malloc"
   ++ movq !%rax (ind ~ofs:buf_ofs rbp)
   ++ movq (ind ~ofs:buf_ofs rbp) !%rax
   ++ movq (ind ~ofs:total_ofs rbp) !%rdx
@@ -895,18 +882,14 @@ let compile_program types (defs, stmts) ofile =
     List.fold_left ( ++ ) nop (fun_texts @ runtime_text @ [ main_text ])
   in
   let data =
-    label fmt_int_label ++ string "%d"
-    ++ label fmt_str_label ++ string "%s"
-    ++ label str_none_label ++ string "None"
-    ++ label str_lbrack_label ++ string "["
-    ++ label str_rbrack_label ++ string "]"
+    label fmt_int_label ++ string "%d" ++ label fmt_str_label ++ string "%s"
+    ++ label str_none_label ++ string "None" ++ label str_lbrack_label
+    ++ string "[" ++ label str_rbrack_label ++ string "]"
     ++ label str_comma_label ++ string ", "
     ++ List.fold_left
          (fun acc (lbl, s) -> acc ++ label lbl ++ string s)
          nop (List.rev !string_data)
-    ++ Hashtbl.fold
-         (fun x _ l -> label x ++ dquad [ 1 ] ++ l)
-         genv nop
+    ++ Hashtbl.fold (fun x _ l -> label x ++ dquad [ 1 ] ++ l) genv nop
     ++ inline "\t.section .note.GNU-stack,\"\",@progbits\n"
   in
   let p = { text; data } in

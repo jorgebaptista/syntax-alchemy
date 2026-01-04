@@ -369,15 +369,15 @@ let rec stmt_has_return = function
 let check_def env (name, params, body) =
   let fn_ty = lookup_fun env name in
   let param_tys, ret_ty =
-    match fn_ty with
-    | TFun (args, ret) -> (args, ret)
-    | _ -> assert false
+    match fn_ty with TFun (args, ret) -> (args, ret) | _ -> assert false
   in
   let locals =
-    List.fold_left2 (fun acc param ty -> StrMap.add param ty acc) StrMap.empty
-      params param_tys
+    List.fold_left2
+      (fun acc param ty -> StrMap.add param ty acc)
+      StrMap.empty params param_tys
   in
-  ignore (check_block env locals ~allow_globals:false ~ret_ty:(Some ret_ty) body);
+  ignore
+    (check_block env locals ~allow_globals:false ~ret_ty:(Some ret_ty) body);
   if not (List.exists stmt_has_return body) then unify ret_ty TNone
 
 let check_program (defs, stmts) =

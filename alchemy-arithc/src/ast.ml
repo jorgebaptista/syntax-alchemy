@@ -1,7 +1,6 @@
 (* Sintaxe abstracta para a linguagem Arith *)
 
 type program = def list * stmt list
-
 and def = string * string list * stmt list
 
 and stmt =

@@ -16,6 +16,7 @@ Compiler from Arith mini-language to x86-64 assembly. Based on [TD1](labs/TD1.md
 4. **Clarity** - Code teaches; comments explain "why"
 5. **Test Execution** - Always run relevant tests and report results (or explain why they could not run)
 6. **Docs** - When adding new functionality, update or add a doc under `alchemy-arithc/docs/features/` and link it from `alchemy-arithc/README.md`
+7. **Formatting** - Run `dune fmt` before finishing a session
 
 ## Project Structure
 

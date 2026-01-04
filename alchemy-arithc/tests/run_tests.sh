@@ -2,7 +2,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-ARITHC=${1:?Path to arithc executable is required}
+ARITH_WRAPPER=${1:?Path to arith wrapper is required}
+ARITHC_PATH="${2:-}"
+
+if [[ -n "$ARITHC_PATH" && "$ARITHC_PATH" != /* ]]; then
+  ARITHC_PATH="$(cd -- "$(dirname -- "$ARITHC_PATH")" && pwd)/$(basename -- "$ARITHC_PATH")"
+fi
 
 run_case() {
   local name="$1"
@@ -11,7 +16,11 @@ run_case() {
   local bin_file="$SCRIPT_DIR/${name}.out"
   local expected_file="$SCRIPT_DIR/${name}.expected"
 
-  "$ARITHC" "$exp_file"
+  if [[ -n "$ARITHC_PATH" ]]; then
+    ARITHC="$ARITHC_PATH" bash "$ARITH_WRAPPER" compile "$exp_file"
+  else
+    bash "$ARITH_WRAPPER" compile "$exp_file"
+  fi
   gcc -g -no-pie "$asm_file" -o "$bin_file"
 
   if ! diff -u "$expected_file" <("$bin_file"); then
@@ -26,7 +35,12 @@ run_error_case() {
   local expected_file="$SCRIPT_DIR/${name}.expected"
   local output
 
-  if output=$("$ARITHC" "$exp_file" 2>&1); then
+  if [[ -n "$ARITHC_PATH" ]]; then
+    if output=$(ARITHC="$ARITHC_PATH" bash "$ARITH_WRAPPER" compile "$exp_file" 2>&1); then
+      echo "Test ${name} expected failure but succeeded" >&2
+      exit 1
+    fi
+  elif output=$(bash "$ARITH_WRAPPER" compile "$exp_file" 2>&1); then
     echo "Test ${name} expected failure but succeeded" >&2
     exit 1
   fi

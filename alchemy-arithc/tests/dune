@@ -1,6 +1,6 @@
 (rule
  (alias runtest)
- (deps run_tests.sh test.exp test.expected test_step1.exp test_step1.expected
+ (deps run_tests.sh ../arith test.exp test.expected test_step1.exp test_step1.expected
    test_step2.exp test_step2.expected test_step3.exp test_step3.expected
    test_step4.exp test_step4.expected test_booleans.exp
    test_booleans.expected test_conditionals.exp test_conditionals.expected
@@ -8,4 +8,4 @@
    test_type_error_add.exp test_type_error_add.expected test_type_error_if.exp
    test_type_error_if.expected)
  (action
-  (run bash %{dep:run_tests.sh} %{exe:../src/arithc.exe})))
+  (run bash %{dep:run_tests.sh} %{dep:../arith} %{exe:../src/arithc.exe})))

@@ -10,6 +10,7 @@ A simple imperative language with:
 
 - [Arithmetic](docs/features/arithmetic.md) - integers, +, -, *, /, %
 - [Variables](docs/features/variables.md) - global and local
+- [Type checking](docs/features/type-checking.md) - static inference, polymorphic let
 - [Booleans](docs/features/booleans.md) - comparisons and logical ops
 - [Strings](docs/features/strings.md) - literals, concatenation, comparisons
 - [Control flow](docs/features/control-flow.md) - if/else, while, for loops

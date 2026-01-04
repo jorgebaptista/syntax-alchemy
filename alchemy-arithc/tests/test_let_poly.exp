@@ -1,0 +1,1 @@
+print (let xs = [] in len(xs + [1]) + len(xs + ["a"]))

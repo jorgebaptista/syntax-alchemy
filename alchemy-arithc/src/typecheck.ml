@@ -33,6 +33,14 @@ module V = struct
 end
 
 module StrMap = Map.Make (String)
+module Vset = Set.Make (V)
+module Vmap = Map.Make (V)
+
+type schema = { vars : Vset.t; typ : typ }
+
+let mono_schema typ = { vars = Vset.empty; typ }
+
+type env = { globals : schema StrMap.t; functions : typ StrMap.t }
 
 let rec head = function
   | TVar v -> (
@@ -111,7 +119,51 @@ let expect actual expected =
   unify actual expected;
   expected
 
-type env = { globals : typ StrMap.t; functions : typ StrMap.t }
+let rec fvars t =
+  match head t with
+  | TInt | TBool | TString | TNone -> Vset.empty
+  | TList t' -> fvars t'
+  | TFun (args, ret) ->
+      List.fold_left (fun acc t -> Vset.union acc (fvars t)) (fvars ret) args
+  | TVar v -> Vset.singleton v
+
+let fvars_schema { vars; typ } = Vset.diff (fvars typ) vars
+
+let fvars_bindings bindings =
+  StrMap.fold
+    (fun _ schema acc -> Vset.union acc (fvars_schema schema))
+    bindings Vset.empty
+
+let env_fvars ~allow_globals env locals =
+  let locals_fvars = fvars_bindings locals in
+  if allow_globals then Vset.union locals_fvars (fvars_bindings env.globals)
+  else locals_fvars
+
+let generalize ~allow_globals env locals typ =
+  let vars = Vset.diff (fvars typ) (env_fvars ~allow_globals env locals) in
+  { vars; typ }
+
+let instantiate schema =
+  let subs = ref Vmap.empty in
+  let rec inst t =
+    match head t with
+    | TInt -> TInt
+    | TBool -> TBool
+    | TString -> TString
+    | TNone -> TNone
+    | TList t' -> TList (inst t')
+    | TFun (args, ret) -> TFun (List.map inst args, inst ret)
+    | TVar v ->
+        if Vset.mem v schema.vars then (
+          match Vmap.find_opt v !subs with
+          | Some v' -> TVar v'
+          | None ->
+              let v' = V.create () in
+              subs := Vmap.add v v' !subs;
+              TVar v')
+        else TVar v
+  in
+  inst schema.typ
 
 let empty_env = { globals = StrMap.empty; functions = StrMap.empty }
 
@@ -122,11 +174,11 @@ let lookup_fun env name =
 
 let lookup_var ~allow_globals env locals name =
   match StrMap.find_opt name locals with
-  | Some t -> t
+  | Some schema -> instantiate schema
   | None ->
       if allow_globals then
         match StrMap.find_opt name env.globals with
-        | Some t -> t
+        | Some schema -> instantiate schema
         | None -> raise (VarUndef name)
       else raise (VarUndef name)
 
@@ -240,7 +292,8 @@ let rec infer_expr env locals ~allow_globals = function
       ensure_orderable t1
   | Letin (name, e1, e2) ->
       let t1 = infer_expr env locals ~allow_globals e1 in
-      let locals = StrMap.add name t1 locals in
+      let schema = generalize ~allow_globals env locals t1 in
+      let locals = StrMap.add name schema locals in
       infer_expr env locals ~allow_globals e2
   | IfExpr (cond, e1, e2) ->
       let tcond = infer_expr env locals ~allow_globals cond in
@@ -259,27 +312,27 @@ let merge_branch_maps before then_map else_map =
   let out = ref before in
   StrSet.iter
     (fun name ->
-      let t_before = StrMap.find_opt name before in
-      let t_then = StrMap.find_opt name then_map in
-      let t_else = StrMap.find_opt name else_map in
-      match (t_before, t_then, t_else) with
-      | Some tb, Some tt, Some te ->
-          unify tb tt;
-          unify tb te
-      | Some tb, Some tt, None -> unify tb tt
-      | Some tb, None, Some te -> unify tb te
-      | None, Some tt, Some te ->
-          unify tt te;
-          out := StrMap.add name tt !out
+      let s_before = StrMap.find_opt name before in
+      let s_then = StrMap.find_opt name then_map in
+      let s_else = StrMap.find_opt name else_map in
+      match (s_before, s_then, s_else) with
+      | Some sb, Some st, Some se ->
+          unify sb.typ st.typ;
+          unify sb.typ se.typ
+      | Some sb, Some st, None -> unify sb.typ st.typ
+      | Some sb, None, Some se -> unify sb.typ se.typ
+      | None, Some st, Some se ->
+          unify st.typ se.typ;
+          out := StrMap.add name (mono_schema st.typ) !out
       | _ -> ())
     keys;
   !out
 
 let merge_loop_maps before body_map =
   StrMap.iter
-    (fun name t_body ->
+    (fun name s_body ->
       match StrMap.find_opt name before with
-      | Some t_before -> unify t_before t_body
+      | Some s_before -> unify s_before.typ s_body.typ
       | None -> ())
     body_map;
   before
@@ -289,9 +342,9 @@ let rec check_stmt env locals ~in_function ~allow_globals ret_type = function
       let t = infer_expr env locals ~allow_globals e in
       let locals =
         match StrMap.find_opt name locals with
-        | None -> StrMap.add name t locals
+        | None -> StrMap.add name (mono_schema t) locals
         | Some prev ->
-            unify prev t;
+            unify prev.typ t;
             locals
       in
       (env, locals)
@@ -335,9 +388,9 @@ let rec check_stmt env locals ~in_function ~allow_globals ret_type = function
       unify t_list (TList t_elem);
       let locals =
         match StrMap.find_opt name locals with
-        | None -> StrMap.add name t_elem locals
+        | None -> StrMap.add name (mono_schema t_elem) locals
         | Some prev ->
-            unify prev t_elem;
+            unify prev.typ t_elem;
             locals
       in
       let _, locals_body =
@@ -377,7 +430,7 @@ let check_def env (name, params, body) =
   | TFun (param_types, ret_type) ->
       let locals =
         List.fold_left2
-          (fun acc param t -> StrMap.add param t acc)
+          (fun acc param t -> StrMap.add param (mono_schema t) acc)
           StrMap.empty params param_types
       in
       ignore

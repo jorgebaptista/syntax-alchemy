@@ -51,7 +51,7 @@ run_error_case() {
   fi
 }
 
-for case in test_step1 test_step2 test_step3 test_step4 test test_booleans test_conditionals test_logical test_loops test_functions test_recursion test_lists test_for test_strings test_none test_modulo test_range test_list_ops; do
+for case in test_step1 test_step2 test_step3 test_step4 test test_booleans test_conditionals test_logical test_loops test_functions test_recursion test_lists test_for test_strings test_none test_modulo test_range test_list_ops test_let_poly; do
   run_case "$case"
 done
 

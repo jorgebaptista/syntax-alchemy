@@ -10,13 +10,14 @@
    test_for.expected test_strings.exp test_strings.expected test_none.exp
    test_none.expected test_modulo.exp test_modulo.expected test_range.exp
    test_range.expected test_list_ops.exp test_list_ops.expected
-   test_type_error_add.exp test_type_error_add.expected
-   test_type_error_if.exp test_type_error_if.expected
-   test_type_error_fun_arity.exp test_type_error_fun_arity.expected
-   test_type_error_fun_arg.exp test_type_error_fun_arg.expected
-   test_return_outside.exp test_return_outside.expected
-   test_type_error_list_assign.exp test_type_error_list_assign.expected
-   test_type_error_string_add.exp test_type_error_string_add.expected
-   test_type_error_range.exp test_type_error_range.expected)
+   test_let_poly.exp test_let_poly.expected test_type_error_add.exp
+   test_type_error_add.expected test_type_error_if.exp
+   test_type_error_if.expected test_type_error_fun_arity.exp
+   test_type_error_fun_arity.expected test_type_error_fun_arg.exp
+   test_type_error_fun_arg.expected test_return_outside.exp
+   test_return_outside.expected test_type_error_list_assign.exp
+   test_type_error_list_assign.expected test_type_error_string_add.exp
+   test_type_error_string_add.expected test_type_error_range.exp
+   test_type_error_range.expected)
  (action
   (run bash %{dep:run_tests.sh} %{dep:../arith} %{exe:../src/arithc.exe})))

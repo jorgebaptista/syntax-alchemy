@@ -13,6 +13,7 @@
 %token WHILE, DO, DONE
 %token DEF, RETURN
 %token LEN
+%token FOR
 %token AND, OR, NOT
 %token EOF
 %token LP RP
@@ -75,6 +76,8 @@ stmt:
     { If (e, b1, []) }
 | WHILE e = expr DO b = while_block DONE
     { While (e, b) }
+| FOR id = IDENT IN e = expr DO b = while_block DONE
+    { For (id, e, b) }
 | RETURN e = expr
     { Return e }
 ;

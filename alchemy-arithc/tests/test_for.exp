@@ -1,0 +1,13 @@
+# For loops over lists
+set sum = 0
+for x in [1, 2, 3] do
+  print x
+  set sum = sum + x
+done
+print sum
+print x
+
+set xs = [4, 5]
+for y in xs do
+  print y
+done

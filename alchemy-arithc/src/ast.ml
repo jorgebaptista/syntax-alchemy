@@ -10,6 +10,7 @@ and stmt =
   | Print of expr (* print e *)
   | If of expr * stmt list * stmt list (* if e then stmts else stmts *)
   | While of expr * stmt list (* while e do stmts done *)
+  | For of string * expr * stmt list (* for x in e do stmts done *)
   | Return of expr (* return e *)
 
 and expr =

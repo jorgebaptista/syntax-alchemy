@@ -7,7 +7,7 @@ Extending [TD1](labs/TD1.md) (base Arith) with features from [TD2](labs/TD%202.m
 | Phase | Feature | Compile from TD2 | Status |
 |-------|---------|------------------|--------|
 | 1 | Constants, arithmetic, print, variables | — (TD1 base) | ✅ |
-| 2 | Booleans, comparisons, if/else, while | `Sif`, `Sfor`, comparisons | ✅ |
+| 2 | Booleans, comparisons, if/else, while, for | `Sif`, `Sfor`, comparisons | ✅ |
 | 3 | Functions (def/call/return, recursion) | `Ecall`, `Sreturn` | ✅ |
 | 4 | Arrays (literals, indexing, len) | `Elist`, `Eget`, `Sset` | ✅ |
 

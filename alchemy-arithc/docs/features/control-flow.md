@@ -86,6 +86,29 @@ print sum
 ```
 Output: `55`
 
+## For Loops
+
+Iterate over a list (evaluated once).
+
+**Syntax:**
+```
+for <name> in <list-expr> do
+  <statements>
+done
+```
+
+**Example:**
+```
+set sum = 0
+for x in [1, 2, 3] do
+  set sum = sum + x
+done
+print sum
+```
+Output: `6`
+
+**Compilation:** stores the list pointer and length, then loops over indices.
+
 ## Compilation
 
 - **If:** Label at start of else block, label at end

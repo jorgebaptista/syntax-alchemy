@@ -61,3 +61,6 @@ print a[1]
 Output: `10`
 
 See [test_lists.exp](../../tests/test_lists.exp) for more examples.
+
+**Related:** list iteration with `for` loops is documented in
+[control-flow](control-flow.md).

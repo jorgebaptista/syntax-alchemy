@@ -23,6 +23,7 @@
     "def", DEF;
     "return", RETURN;
     "len", LEN;
+    "for", FOR;
     "and", AND;
     "or", OR;
     "not", NOT;

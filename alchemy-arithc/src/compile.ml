@@ -27,6 +27,15 @@ module StrMap = Map.Make (String)
 
 let align_frame_size size = if size mod 16 = 8 then size + 8 else size
 
+let alloc_temp frame_size =
+  let ofs = -(!frame_size + 8) in
+  frame_size := !frame_size + 8;
+  ofs
+
+let alloc_local frame_size next =
+  if !frame_size = next then frame_size := !frame_size + 8;
+  (-next - 8, next + 8)
+
 (* Compilação de uma expressão *)
 let compile_expr ~frame_size ~allow_globals env next depth expr =
   (* Função recursiva local à compile_expr usada para gerar o código máquina a partir
@@ -235,6 +244,35 @@ let rec compile_instr_main frame_size = function
       ++
       (* End of loop *)
       label lbl_end
+  | For (name, e_list, body) ->
+      let lbl_start = new_label ".Lfor" in
+      let lbl_end = new_label ".Lendfor" in
+      let list_ofs = alloc_temp frame_size in
+      let len_ofs = alloc_temp frame_size in
+      let idx_ofs = alloc_temp frame_size in
+      let list_code = compile_expr_main frame_size e_list in
+      if not (Hashtbl.mem genv name) then Hashtbl.add genv name ();
+      list_code
+      ++ popq rax
+      ++ movq !%rax (ind ~ofs:list_ofs rbp)
+      ++ movq (ind ~ofs:list_ofs rbp) !%rax
+      ++ movq (ind rax) !%rax
+      ++ movq !%rax (ind ~ofs:len_ofs rbp)
+      ++ movq (imm 0) (ind ~ofs:idx_ofs rbp)
+      ++ label lbl_start
+      ++ movq (ind ~ofs:idx_ofs rbp) !%rax
+      ++ cmpq (ind ~ofs:len_ofs rbp) !%rax
+      ++ jge lbl_end
+      ++ movq (ind ~ofs:list_ofs rbp) !%rax
+      ++ movq (ind ~ofs:idx_ofs rbp) !%rdi
+      ++ movq (ind ~ofs:8 ~index:rdi ~scale:8 rax) !%rdx
+      ++ movq !%rdx (lab name)
+      ++ compile_block_main frame_size body
+      ++ movq (ind ~ofs:idx_ofs rbp) !%rax
+      ++ incq !%rax
+      ++ movq !%rax (ind ~ofs:idx_ofs rbp)
+      ++ jmp lbl_start
+      ++ label lbl_end
   | Return _ -> failwith "return used outside of a function"
 
 and compile_block_main frame_size stmts =
@@ -307,6 +345,49 @@ let rec compile_stmt_fn frame_size ret_label env next = function
       ( label lbl_start ++ cond_code ++ body_code ++ jmp lbl_start ++ label lbl_end,
         env,
         next )
+  | For (name, e_list, body) ->
+      let env_before = env in
+      let next0 = next in
+      let var_ofs, next1, env_after =
+        match StrMap.find_opt name env_before with
+        | Some ofs -> (ofs, next0, env_before)
+        | None ->
+            let ofs, next1 = alloc_local frame_size next0 in
+            (ofs, next1, StrMap.add name ofs env_before)
+      in
+      let list_ofs, next2 = alloc_local frame_size next1 in
+      let len_ofs, next3 = alloc_local frame_size next2 in
+      let idx_ofs, next4 = alloc_local frame_size next3 in
+      let lbl_start = new_label ".Lfor" in
+      let lbl_end = new_label ".Lendfor" in
+      let init_code =
+        compile_expr ~frame_size ~allow_globals:false env_before next4 0 e_list
+        ++ popq rax
+        ++ movq !%rax (ind ~ofs:list_ofs rbp)
+        ++ movq (ind ~ofs:list_ofs rbp) !%rax
+        ++ movq (ind rax) !%rax
+        ++ movq !%rax (ind ~ofs:len_ofs rbp)
+        ++ movq (imm 0) (ind ~ofs:idx_ofs rbp)
+      in
+      let body_code, env, next =
+        compile_block_fn frame_size ret_label env_after next4 body
+      in
+      let loop_code =
+        label lbl_start
+        ++ movq (ind ~ofs:idx_ofs rbp) !%rax
+        ++ cmpq (ind ~ofs:len_ofs rbp) !%rax
+        ++ jge lbl_end
+        ++ movq (ind ~ofs:list_ofs rbp) !%rax
+        ++ movq (ind ~ofs:idx_ofs rbp) !%rdi
+        ++ movq (ind ~ofs:8 ~index:rdi ~scale:8 rax) !%rdx
+        ++ movq !%rdx (ind ~ofs:var_ofs rbp)
+        ++ body_code
+        ++ movq (ind ~ofs:idx_ofs rbp) !%rax
+        ++ incq !%rax
+        ++ movq !%rax (ind ~ofs:idx_ofs rbp)
+        ++ jmp lbl_start ++ label lbl_end
+      in
+      (init_code ++ loop_code, env, next)
 
 and compile_block_fn frame_size ret_label env next stmts =
   List.fold_left

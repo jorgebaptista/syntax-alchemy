@@ -223,6 +223,31 @@ let rec check_stmt env locals ~allow_globals ~ret_ty = function
       unify t_list (TList elem_ty);
       unify t_value elem_ty;
       (env, locals)
+  | For (name, e_list, body) ->
+      let t_list = infer_expr env locals ~allow_globals e_list in
+      let elem_ty = TVar (V.create ()) in
+      unify t_list (TList elem_ty);
+      let env, locals =
+        if allow_globals then
+          let globals =
+            match StrMap.find_opt name env.globals with
+            | None -> StrMap.add name elem_ty env.globals
+            | Some prev ->
+                unify prev elem_ty;
+                env.globals
+          in
+          ({ env with globals }, locals)
+        else
+          let locals =
+            match StrMap.find_opt name locals with
+            | None -> StrMap.add name elem_ty locals
+            | Some prev ->
+                unify prev elem_ty;
+                locals
+          in
+          (env, locals)
+      in
+      check_block env locals ~allow_globals ~ret_ty body
   | Print e ->
       ignore (infer_expr env locals ~allow_globals e);
       (env, locals)

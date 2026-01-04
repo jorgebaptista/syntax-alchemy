@@ -66,12 +66,12 @@ let () =
     if !parse_only then exit 0;
 
     (* Type-checking before code generation *)
-    let env = Typecheck.check_program p in
+    ignore (Typecheck.check_program p);
 
     (* Compilamos a árvore de sintaxe abstrata p.
         O código máquina resultante de desta transformação deve ser
 	excrito no ficheiro target  ofile. *)
-    Compile.compile_program env p !ofile
+    Compile.compile_program p !ofile
   with
   | Lexer.Lexing_error c ->
       (* Erro léxico. Recuperamos a posição absoluta e convertêmo-la no formato linha-coluna *)
@@ -99,10 +99,6 @@ let () =
       eprintf
         "Type Error: wrong number of arguments for %s (expected %d, got %d)@."
         name expected actual;
-      exit 1
-  | Typecheck.TypeError (t1, t2) ->
-      eprintf "Type Error: cannot unify %a with %a@." Typecheck.pp_typ t1
-        Typecheck.pp_typ t2;
       exit 1
   | Compile.VarUndef s ->
       (* Erro derivado de um mau uso de variável durante a compilação *)

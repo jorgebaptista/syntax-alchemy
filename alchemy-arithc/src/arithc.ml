@@ -86,6 +86,15 @@ let () =
   | Typecheck.VarUndef s ->
       eprintf "Compilation Error: The variable %s is not definded@." s;
       exit 1
+  | Typecheck.FuncUndef s ->
+      eprintf "Compilation Error: The function %s is not definded@." s;
+      exit 1
+  | Typecheck.FuncRedef s ->
+      eprintf "Compilation Error: The function %s is already defined@." s;
+      exit 1
+  | Typecheck.ReturnOutside ->
+      eprintf "Compilation Error: return used outside of a function@.";
+      exit 1
   | Typecheck.TypeError (t1, t2) ->
       eprintf "Type Error: cannot unify %a with %a@." Typecheck.pp_typ t1
         Typecheck.pp_typ t2;

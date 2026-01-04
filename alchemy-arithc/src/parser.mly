@@ -11,9 +11,11 @@
 %token TRUE, FALSE
 %token IF, THEN, ELSE
 %token WHILE, DO, DONE
+%token DEF, RETURN
 %token AND, OR, NOT
 %token EOF
 %token LP RP
+%token COMMA
 %token PLUS MINUS TIMES DIV
 %token EQ EQEQ NEQ LT LE GT GE
 
@@ -39,12 +41,22 @@
 %%
 
 prog:
-| p = stmts EOF { List.rev p }
+| dl = list(def) s = opt_stmts EOF { (dl, s) }
 ;
 
 stmts:
 | i = stmt               { [i] }
 | l = stmts i = stmt     { i :: l }
+;
+
+opt_stmts:
+| /* empty */            { [] }
+| l = stmts              { List.rev l }
+;
+
+def:
+| DEF f = IDENT LP params = separated_list(COMMA, IDENT) RP b = block
+    { (f, params, b) }
 ;
 
 stmt:
@@ -58,6 +70,8 @@ stmt:
     { If (e, b1, []) }
 | WHILE e = expr DO b = while_block DONE
     { While (e, b) }
+| RETURN e = expr
+    { Return e }
 ;
 
 while_block:
@@ -75,6 +89,8 @@ expr:
 | TRUE                               { Bool true }
 | FALSE                              { Bool false }
 | id = IDENT                         { Var id }
+| f = IDENT LP args = separated_list(COMMA, expr) RP
+                                     { Call (f, args) }
 | e1 = expr o = arith_op e2 = expr   { Binop (o, e1, e2) }
 | e1 = expr o = cmp_op e2 = expr     { Binop (o, e1, e2) }
 | e1 = expr AND e2 = expr            { Binop (And, e1, e2) }
@@ -103,6 +119,5 @@ expr:
 | GT   { Gt }
 | GE   { Ge }
 ;
-
 
 

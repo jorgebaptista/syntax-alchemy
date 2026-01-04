@@ -20,6 +20,8 @@
     "while", WHILE;
     "do", DO;
     "done", DONE;
+    "def", DEF;
+    "return", RETURN;
     "and", AND;
     "or", OR;
     "not", NOT;
@@ -52,8 +54,8 @@ rule token = parse
   | '='     { EQ }
   | '('     { LP }
   | ')'     { RP }
+  | ','     { COMMA }
   | integer as s { CST (int_of_string s) }
   | eof     { EOF }
   | _ as c  { raise (Lexing_error c) }
-
 

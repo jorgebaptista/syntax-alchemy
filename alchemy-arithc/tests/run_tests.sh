@@ -51,10 +51,40 @@ run_error_case() {
   fi
 }
 
-for case in test_step1 test_step2 test_step3 test_step4 test test_booleans test_conditionals test_logical test_loops test_functions test_recursion test_lists test_for test_strings test_none test_modulo test_range test_list_ops; do
+run_runtime_error_case() {
+  local name="$1"
+  local exp_file="$SCRIPT_DIR/${name}.exp"
+  local asm_file="$SCRIPT_DIR/${name}.s"
+  local bin_file="$SCRIPT_DIR/${name}.out"
+  local expected_file="$SCRIPT_DIR/${name}.expected"
+  local output
+
+  if [[ -n "$ARITHC_PATH" ]]; then
+    ARITHC="$ARITHC_PATH" bash "$ARITH_WRAPPER" compile "$exp_file"
+  else
+    bash "$ARITH_WRAPPER" compile "$exp_file"
+  fi
+  gcc -g -no-pie "$asm_file" -o "$bin_file"
+
+  if output=$("$bin_file" 2>&1); then
+    echo "Test ${name} expected runtime failure but succeeded" >&2
+    exit 1
+  fi
+
+  if ! diff -u "$expected_file" <(printf "%s\n" "$output"); then
+    echo "Test ${name} failed" >&2
+    exit 1
+  fi
+}
+
+for case in test_step1 test_step2 test_step3 test_step4 test test_booleans test_conditionals test_logical test_loops test_functions test_recursion test_lists test_for test_strings test_none test_modulo test_range test_list_ops test_type_error_if test_type_error_list_assign; do
   run_case "$case"
 done
 
-for case in test_type_error_add test_type_error_if test_type_error_fun_arity test_type_error_fun_arg test_return_outside test_type_error_list_assign test_type_error_string_add test_type_error_range; do
+for case in test_type_error_fun_arity test_return_outside; do
   run_error_case "$case"
+done
+
+for case in test_type_error_add test_type_error_fun_arg test_type_error_string_add test_type_error_range; do
+  run_runtime_error_case "$case"
 done

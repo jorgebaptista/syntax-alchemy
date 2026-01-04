@@ -14,9 +14,10 @@ List literals, indexing, length, and element assignment.
 set a = [1, 2, 3]
 ```
 
-## Type Rules
+## Types
 
-List elements must have the same type (lists are homogeneous).
+Lists can hold mixed types. You can replace elements with values of a different
+type.
 
 ## Concatenation
 
@@ -92,6 +93,15 @@ set a[1] = 10
 print a[1]
 ```
 Output: `10`
+
+## Runtime Errors
+
+These operations raise runtime errors on invalid inputs:
+
+- `len` on a non-list
+- indexing with a non-list or non-integer index
+- out-of-range indexes
+- assignment with a non-list or non-integer index
 
 See [test_lists.exp](../../tests/test_lists.exp) for more examples.
 

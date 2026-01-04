@@ -43,8 +43,7 @@ let rec check_expr env = function
   | Call (name, args) ->
       let expected = lookup_fun env name in
       let actual = List.length args in
-      if expected <> actual then
-        raise (ArityMismatch (name, expected, actual));
+      if expected <> actual then raise (ArityMismatch (name, expected, actual));
       List.iter (check_expr env) args
 
 let rec check_stmt env ~in_function = function

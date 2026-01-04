@@ -1,3 +1,4 @@
-# Type error: list element type mismatch
+# Mixed-type list assignment
 set a = [1, 2]
 set a[0] = true
+print a

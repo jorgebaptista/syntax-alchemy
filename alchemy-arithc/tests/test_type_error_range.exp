@@ -1,1 +1,2 @@
+# Runtime error: range expects int
 print list(range(true))

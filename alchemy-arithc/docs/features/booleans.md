@@ -1,35 +1,36 @@
 # Booleans & Logical Operations
 
-Boolean values, comparison operators, and logical operations with short-circuit evaluation.
+Boolean values, comparisons, and truthiness-based logic.
 
 ## Boolean Literals
 
-- `true` → compiles to `1`
-- `false` → compiles to `0`
+- `true`
+- `false`
+
+Printing booleans shows `True` or `False`.
+
+## Truthiness
+
+Conditions and boolean operators use Python-style truthiness:
+
+- `None`, `false`, `0`, `""`, and `[]` are false
+- everything else is true
 
 ## Comparison Operators
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `==` | Equal | `5 == 5` → `true` |
-| `!=` | Not equal | `3 != 4` → `true` |
-| `<` | Less than | `2 < 3` → `true` |
-| `<=` | Less or equal | `3 <= 3` → `true` |
-| `>` | Greater than | `5 > 3` → `true` |
-| `>=` | Greater or equal | `4 >= 4` → `true` |
+Comparisons return booleans and work for integers, booleans, strings, lists, and
+`None`. When comparing different types, the order is:
 
-## Comparison Targets
+```
+None < bool < int < string < list
+```
 
-Comparisons work for integers, booleans, strings, and lists. List comparisons are
-lexicographic (element by element), and `==`/`!=` are structural.
+List comparisons are lexicographic (element by element).
 
 ## Logical Operators
 
-| Operator | Description | Short-circuit? |
-|----------|-------------|----------------|
-| `and` | Logical AND | ✅ Yes |
-| `or` | Logical OR | ✅ Yes |
-| `not` | Logical NOT | N/A |
+- `and` / `or` short-circuit and return one of their operands
+- `not` returns a boolean (`True` or `False`)
 
 ## Examples
 
@@ -39,7 +40,7 @@ print 1 < 2
 print 5 == 5
 print 3 != 4
 ```
-Output: `1` (true), `1` (true), `1` (true)
+Output: `True`, `True`, `True`
 
 **Logical operations:**
 ```
@@ -47,18 +48,13 @@ print true and false
 print true or false
 print not true
 ```
-Output: `0` (false), `1` (true), `0` (false)
+Output: `False`, `True`, `False`
 
 **Short-circuit evaluation:**
 ```
 print not true and 1 / 0 == 0
 ```
-Output: `0` (doesn't evaluate `1/0` because left side is false)
+Output: `False` (doesn't evaluate `1/0` because left side is false)
 
-## Compilation
-
-- **Comparisons:** Use `cmpq` + `setCC` instructions (sete, setne, setl, setle, setg, setge)
-- **Logical AND/OR:** Use conditional jumps for short-circuit evaluation
-- **NOT:** Use `xorq $1` to flip 0↔1
-
-See [test_booleans.exp](../../tests/test_booleans.exp) and [test_logical.exp](../../tests/test_logical.exp) for more examples.
+See [test_booleans.exp](../../tests/test_booleans.exp) and
+[test_logical.exp](../../tests/test_logical.exp) for more examples.

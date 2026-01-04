@@ -1,2 +1,2 @@
-# Type error: bool + int
+# Runtime error: bool + int
 print true + 1

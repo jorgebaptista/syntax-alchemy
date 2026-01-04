@@ -27,8 +27,13 @@ Strings support `==`, `!=`, `<`, `<=`, `>`, `>=`.
 ```
 print "a" < "b"
 ```
-Output: `1`
+Output: `True`
 
 ## Printing
 
 `print` outputs the string value without quotes.
+
+## Runtime Errors
+
+Only string + string is supported. Other combinations raise
+`error: Unsupported operand types`.

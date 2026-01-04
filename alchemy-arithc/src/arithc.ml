@@ -65,6 +65,9 @@ let () =
     (* Paramos aqui se só pretendemos a fase de parsing *)
     if !parse_only then exit 0;
 
+    (* Type-checking before code generation *)
+    Typecheck.check_program p;
+
     (* Compilamos a árvore de sintaxe abstrata p.
         O código máquina resultante de desta transformação deve ser
 	escrito no ficheiro target  ofile. *)
@@ -79,6 +82,13 @@ let () =
       (* Erro Sintático. Recuperamos a posição absoluta e convertêmo-la no formato linha-coluna *)
       localisation (Lexing.lexeme_start_p buf);
       eprintf "Syntax Error@.";
+      exit 1
+  | Typecheck.VarUndef s ->
+      eprintf "Compilation Error: The variable %s is not definded@." s;
+      exit 1
+  | Typecheck.TypeError (t1, t2) ->
+      eprintf "Type Error: cannot unify %a with %a@." Typecheck.pp_typ t1
+        Typecheck.pp_typ t2;
       exit 1
   | Compile.VarUndef s ->
       (* Erro derivado de um mau uso de variável durante a compilação *)

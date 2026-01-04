@@ -14,6 +14,7 @@ Compiler from Arith mini-language to x86-64 assembly. Based on [TD1](labs/TD1.md
 2. **Test First** - Add tests before implementing features
 3. **Incremental** - Small changes, verify with tests
 4. **Clarity** - Code teaches; comments explain "why"
+5. **Test Execution** - Always run relevant tests and report results (or explain why they could not run)
 
 ## Project Structure
 

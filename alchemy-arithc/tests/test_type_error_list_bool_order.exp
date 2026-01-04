@@ -1,0 +1,2 @@
+# Type error: list ordering requires orderable element types
+print [true] < [false]

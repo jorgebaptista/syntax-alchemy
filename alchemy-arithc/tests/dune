@@ -18,7 +18,8 @@
    test_return_outside.expected test_type_error_list_assign.exp
    test_type_error_list_assign.expected test_type_error_string_add.exp
    test_type_error_string_add.expected test_type_error_bool_order.exp
-   test_type_error_bool_order.expected test_type_error_range.exp
+   test_type_error_bool_order.expected test_type_error_list_bool_order.exp
+   test_type_error_list_bool_order.expected test_type_error_range.exp
    test_type_error_range.expected)
  (action
   (run bash %{dep:run_tests.sh} %{dep:../arith} %{exe:../src/arithc.exe})))

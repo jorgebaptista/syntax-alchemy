@@ -196,10 +196,12 @@ let ensure_addable t =
   | TList t' -> TList t'
   | t' -> type_error t' TInt
 
-let ensure_orderable t =
+let rec ensure_orderable t =
   match head (default_int t) with
   | TInt | TString -> TBool
-  | TList _ -> TBool
+  | TList t' ->
+      ignore (ensure_orderable t');
+      TBool
   | t' -> type_error t' TInt
 
 let rec infer_expr env locals ~allow_globals = function

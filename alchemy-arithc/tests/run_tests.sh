@@ -55,6 +55,6 @@ for case in test_step1 test_step2 test_step3 test_step4 test test_booleans test_
   run_case "$case"
 done
 
-for case in test_type_error_add test_type_error_if test_type_error_fun_arity test_type_error_fun_arg test_return_outside test_type_error_list_assign test_type_error_string_add test_type_error_bool_order test_type_error_range; do
+for case in test_type_error_add test_type_error_if test_type_error_fun_arity test_type_error_fun_arg test_return_outside test_type_error_list_assign test_type_error_string_add test_type_error_bool_order test_type_error_list_bool_order test_type_error_range; do
   run_error_case "$case"
 done

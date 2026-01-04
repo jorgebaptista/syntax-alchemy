@@ -18,7 +18,7 @@ implicit truthiness or automatic conversion from other types to booleans.
 
 Comparisons return booleans. Equality (`==`, `!=`) requires both operands to
 have the same type. Ordering (`<`, `<=`, `>`, `>=`) is defined for integers,
-strings, and lists with matching element types.
+strings, and lists whose element type is orderable (recursively).
 
 List comparisons are lexicographic (element by element).
 

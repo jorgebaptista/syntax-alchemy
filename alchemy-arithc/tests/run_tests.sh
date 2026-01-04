@@ -51,10 +51,10 @@ run_error_case() {
   fi
 }
 
-for case in test_step1 test_step2 test_step3 test_step4 test test_booleans test_conditionals test_logical test_loops test_functions test_recursion test_lists test_for; do
+for case in test_step1 test_step2 test_step3 test_step4 test test_booleans test_conditionals test_logical test_loops test_functions test_recursion test_lists test_for test_strings test_none test_modulo test_range test_list_ops; do
   run_case "$case"
 done
 
-for case in test_type_error_add test_type_error_if test_type_error_fun_arity test_type_error_fun_arg test_return_outside test_type_error_list_assign; do
+for case in test_type_error_add test_type_error_if test_type_error_fun_arity test_type_error_fun_arg test_return_outside test_type_error_list_assign test_type_error_string_add test_type_error_range; do
   run_error_case "$case"
 done

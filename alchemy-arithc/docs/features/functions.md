@@ -34,7 +34,7 @@ Output: `5`
 
 Use `return <expr>` to return a value from a function.
 
-If a function reaches the end without a return, it returns `0`.
+If a function reaches the end without a return, it returns `None`.
 
 ## Scope
 

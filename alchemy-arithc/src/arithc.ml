@@ -66,12 +66,12 @@ let () =
     if !parse_only then exit 0;
 
     (* Type-checking before code generation *)
-    Typecheck.check_program p;
+    let env = Typecheck.check_program p in
 
     (* Compilamos a árvore de sintaxe abstrata p.
         O código máquina resultante de desta transformação deve ser
-	escrito no ficheiro target  ofile. *)
-    Compile.compile_program p !ofile
+	excrito no ficheiro target  ofile. *)
+    Compile.compile_program env p !ofile
   with
   | Lexer.Lexing_error c ->
       (* Erro léxico. Recuperamos a posição absoluta e convertêmo-la no formato linha-coluna *)
@@ -84,7 +84,7 @@ let () =
       eprintf "Syntax Error@.";
       exit 1
   | Typecheck.VarUndef s ->
-      eprintf "Compilation Error: The variable %s is not definded@." s;
+      eprintf "Compilation Error: The variable %s is not defined@." s;
       exit 1
   | Typecheck.FuncUndef s ->
       eprintf "Compilation Error: The function %s is not definded@." s;
@@ -94,6 +94,11 @@ let () =
       exit 1
   | Typecheck.ReturnOutside ->
       eprintf "Compilation Error: return used outside of a function@.";
+      exit 1
+  | Typecheck.ArityMismatch (name, expected, actual) ->
+      eprintf
+        "Type Error: wrong number of arguments for %s (expected %d, got %d)@."
+        name expected actual;
       exit 1
   | Typecheck.TypeError (t1, t2) ->
       eprintf "Type Error: cannot unify %a with %a@." Typecheck.pp_typ t1

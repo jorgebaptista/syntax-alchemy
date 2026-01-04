@@ -18,6 +18,11 @@ Boolean values, comparison operators, and logical operations with short-circuit 
 | `>` | Greater than | `5 > 3` → `true` |
 | `>=` | Greater or equal | `4 >= 4` → `true` |
 
+## Comparison Targets
+
+Comparisons work for integers, booleans, strings, and lists. List comparisons are
+lexicographic (element by element), and `==`/`!=` are structural.
+
 ## Logical Operators
 
 | Operator | Description | Short-circuit? |

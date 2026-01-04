@@ -1,0 +1,8 @@
+# list(range(n)) and for loops
+set r = list(range(4))
+print len(r)
+print r[0]
+print r[3]
+for x in r do
+  print x
+done

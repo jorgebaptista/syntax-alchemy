@@ -7,19 +7,20 @@
 
 %token <int> CST
 %token <string> IDENT
+%token <string> STRING
 %token SET, LET, IN, PRINT
-%token TRUE, FALSE
+%token TRUE, FALSE, NONE
 %token IF, THEN, ELSE
 %token WHILE, DO, DONE
 %token DEF, RETURN
-%token LEN
+%token LEN, LIST, RANGE
 %token FOR
 %token AND, OR, NOT
 %token EOF
 %token LP RP
 %token LSQ RSQ
 %token COMMA
-%token PLUS MINUS TIMES DIV
+%token PLUS MINUS TIMES DIV MOD
 %token EQ EQEQ NEQ LT LE GT GE
 
 /* Definição das prioridades e das associatividades dos tokens */
@@ -31,7 +32,7 @@
 %left EQEQ NEQ
 %left LT LE GT GE
 %left PLUS MINUS
-%left TIMES DIV
+%left TIMES DIV MOD
 %nonassoc NOT
 %nonassoc uminus
 %nonassoc LSQ
@@ -70,6 +71,8 @@ stmt:
     { SetIndex (Var id, i, e) }
 | PRINT e = expr             
     { Print e }
+| e = expr
+    { Expr e }
 | IF e = expr THEN b1 = block ELSE b2 = block
     { If (e, b1, b2) }
 | IF e = expr THEN b1 = block
@@ -96,9 +99,12 @@ expr:
 | c = CST                            { Cst c }
 | TRUE                               { Bool true }
 | FALSE                              { Bool false }
+| STRING                             { Str $1 }
+| NONE                               { NoneLit }
 | id = IDENT                         { Var id }
 | f = IDENT LP args = separated_list(COMMA, expr) RP
                                      { Call (f, args) }
+| LIST LP RANGE LP e = expr RP RP    { ListRange e }
 | LEN LP e = expr RP                 { Len e }
 | LSQ l = separated_list(COMMA, expr) RSQ
                                      { ListLit l }
@@ -122,6 +128,7 @@ expr:
 | MINUS { Sub }
 | TIMES { Mul }
 | DIV   { Div }
+| MOD   { Mod }
 ;
 
 %inline cmp_op:

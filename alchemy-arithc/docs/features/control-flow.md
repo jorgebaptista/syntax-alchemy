@@ -109,6 +109,22 @@ Output: `6`
 
 **Compilation:** stores the list pointer and length, then loops over indices.
 
+## Expression Statements
+
+Any expression can be used as a statement; its value is ignored. This is
+useful for calling functions with side effects.
+
+**Example:**
+```
+def set_first(a) (
+  set a[0] = 42
+)
+set xs = [1, 2]
+set_first(xs)
+print xs[0]
+```
+Output: `42`
+
 ## Compilation
 
 - **If:** Label at start of else block, label at end

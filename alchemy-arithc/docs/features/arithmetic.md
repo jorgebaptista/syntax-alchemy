@@ -9,7 +9,8 @@ Integer constants and basic arithmetic operators.
 | `+` | Addition | `3 + 4` → `7` |
 | `-` | Subtraction | `10 - 3` → `7` |
 | `*` | Multiplication | `5 * 6` → `30` |
-| `/` | Integer division | `15 / 4` → `3` |
+| `/` or `//` | Integer division | `15 / 4` → `3` |
+| `%` | Modulo | `10 % 3` → `1` |
 | `( )` | Grouping | `(2 + 3) * 4` → `20` |
 
 ## Examples
@@ -37,6 +38,12 @@ Output: `3`
 print 4 + 7 / 2
 ```
 Output: `7`
+
+**Modulo:**
+```
+print 10 % 3
+```
+Output: `1`
 
 ## Compilation
 

@@ -1,12 +1,27 @@
 open Format
 open Ast
 
-type typ = TInt | TBool | TList of typ | TFun of typ list * typ | TVar of tvar
-and tvar = { id : int; mutable def : typ option }
+type typ =
+  | TInt
+  | TBool
+  | TString
+  | TNone
+  | TList of typ
+  | TFun of typ list * typ
+  | TVar of tvar
+
+and tvar = {
+  id : int;
+  mutable def : typ option;
+  mutable addable : bool;
+  mutable comparable : bool;
+}
 
 let rec pp_typ fmt = function
   | TInt -> fprintf fmt "int"
   | TBool -> fprintf fmt "bool"
+  | TString -> fprintf fmt "string"
+  | TNone -> fprintf fmt "none"
   | TList t -> fprintf fmt "list[%a]" pp_typ t
   | TFun (args, ret) ->
       fprintf fmt "@[<2>(%a) -> %a@]" pp_typ_list args pp_typ ret
@@ -31,7 +46,7 @@ module V = struct
     let r = ref 0 in
     fun () ->
       incr r;
-      { id = !r; def = None }
+      { id = !r; def = None; addable = false; comparable = false }
 end
 
 let rec head = function
@@ -48,6 +63,8 @@ let rec canon t =
   match head t with
   | TInt -> TInt
   | TBool -> TBool
+  | TString -> TString
+  | TNone -> TNone
   | TList t -> TList (canon t)
   | TFun (args, ret) -> TFun (List.map canon args, canon ret)
   | TVar v -> TVar v
@@ -57,13 +74,39 @@ exception VarUndef of string
 exception FuncUndef of string
 exception FuncRedef of string
 exception ReturnOutside
+exception ArityMismatch of string * int * int
 
 let type_error t1 t2 = raise (TypeError (canon t1, canon t2))
+
+let rec ensure_addable t =
+  match head t with
+  | TInt | TString -> ()
+  | TList _ -> ()
+  | TVar v -> v.addable <- true
+  | t' -> type_error t' TInt
+
+let rec ensure_comparable t =
+  match head t with
+  | TInt | TBool | TString -> ()
+  | TList t' -> ensure_comparable t'
+  | TVar v -> v.comparable <- true
+  | t' -> type_error t' TInt
+
+let constrain_addable t = ensure_addable t
+let constrain_comparable t = ensure_comparable t
+
+let merge_constraints v1 v2 =
+  v2.addable <- v1.addable || v2.addable;
+  v2.comparable <- v1.comparable || v2.comparable
+
+let check_constraints v t =
+  if v.addable then ensure_addable t;
+  if v.comparable then ensure_comparable t
 
 let rec occur v t =
   match head t with
   | TVar v' -> V.equal v v'
-  | TInt | TBool -> false
+  | TInt | TBool | TString | TNone -> false
   | TList t -> occur v t
   | TFun (args, ret) -> List.exists (occur v) args || occur v ret
 
@@ -71,6 +114,8 @@ let rec unify t1 t2 =
   match (head t1, head t2) with
   | TInt, TInt -> ()
   | TBool, TBool -> ()
+  | TString, TString -> ()
+  | TNone, TNone -> ()
   | TList t1', TList t2' -> unify t1' t2'
   | TFun (args1, ret1), TFun (args2, ret2) ->
       if List.length args1 <> List.length args2 then type_error t1 t2
@@ -78,8 +123,14 @@ let rec unify t1 t2 =
         List.iter2 unify args1 args2;
         unify ret1 ret2)
   | TVar v1, TVar v2 when V.equal v1 v2 -> ()
+  | TVar v1, TVar v2 ->
+      merge_constraints v1 v2;
+      v1.def <- Some (TVar v2)
   | TVar v, t | t, TVar v ->
-      if occur v t then type_error (TVar v) t else v.def <- Some t
+      if occur v t then type_error (TVar v) t
+      else (
+        check_constraints v t;
+        v.def <- Some t)
   | t1', t2' -> type_error t1' t2'
 
 module StrMap = Map.Make (String)
@@ -110,12 +161,22 @@ let expect actual expected =
 let rec infer_expr env locals ~allow_globals = function
   | Cst _ -> TInt
   | Bool _ -> TBool
+  | Str _ -> TString
+  | NoneLit -> TNone
   | Var name -> lookup_var env locals ~allow_globals name
   | Call (name, args) ->
       let fn_ty = lookup_fun env name in
       let arg_tys =
         List.map (fun e -> infer_expr env locals ~allow_globals e) args
       in
+      let expected_args =
+        match head fn_ty with
+        | TFun (params, _ret) -> List.length params
+        | _ -> assert false
+      in
+      let actual_args = List.length arg_tys in
+      if expected_args <> actual_args then
+        raise (ArityMismatch (name, expected_args, actual_args));
       let ret_ty = TVar (V.create ()) in
       unify fn_ty (TFun (arg_tys, ret_ty));
       ret_ty
@@ -133,6 +194,10 @@ let rec infer_expr env locals ~allow_globals = function
             t1
       in
       TList elem_ty
+  | ListRange e ->
+      let t = infer_expr env locals ~allow_globals e in
+      ignore (expect t TInt);
+      TList TInt
   | Get (e_list, e_index) ->
       let t_list = infer_expr env locals ~allow_globals e_list in
       let t_index = infer_expr env locals ~allow_globals e_index in
@@ -153,10 +218,16 @@ let rec infer_expr env locals ~allow_globals = function
       let t = infer_expr env locals ~allow_globals e in
       ignore (expect t TBool);
       TBool
-  | Binop (Add, e1, e2)
+  | Binop (Add, e1, e2) ->
+      let t1 = infer_expr env locals ~allow_globals e1 in
+      let t2 = infer_expr env locals ~allow_globals e2 in
+      unify t1 t2;
+      constrain_addable t1;
+      t1
   | Binop (Sub, e1, e2)
   | Binop (Mul, e1, e2)
-  | Binop (Div, e1, e2) ->
+  | Binop (Div, e1, e2)
+  | Binop (Mod, e1, e2) ->
       let t1 = infer_expr env locals ~allow_globals e1 in
       let t2 = infer_expr env locals ~allow_globals e2 in
       ignore (expect t1 TInt);
@@ -179,8 +250,8 @@ let rec infer_expr env locals ~allow_globals = function
   | Binop (Ge, e1, e2) ->
       let t1 = infer_expr env locals ~allow_globals e1 in
       let t2 = infer_expr env locals ~allow_globals e2 in
-      ignore (expect t1 TInt);
-      ignore (expect t2 TInt);
+      unify t1 t2;
+      constrain_comparable t1;
       TBool
   | Letin (name, e1, e2) ->
       let t1 = infer_expr env locals ~allow_globals e1 in
@@ -251,6 +322,9 @@ let rec check_stmt env locals ~allow_globals ~ret_ty = function
   | Print e ->
       ignore (infer_expr env locals ~allow_globals e);
       (env, locals)
+  | Expr e ->
+      ignore (infer_expr env locals ~allow_globals e);
+      (env, locals)
   | Return e -> (
       match ret_ty with
       | None -> raise ReturnOutside
@@ -283,6 +357,15 @@ let register_function env (name, params, _body) =
   let fn_ty = TFun (param_tys, ret_ty) in
   { env with functions = StrMap.add name fn_ty env.functions }
 
+let rec stmt_has_return = function
+  | Return _ -> true
+  | If (_, then_stmts, else_stmts) ->
+      List.exists stmt_has_return then_stmts
+      || List.exists stmt_has_return else_stmts
+  | While (_, body) -> List.exists stmt_has_return body
+  | For (_, _, body) -> List.exists stmt_has_return body
+  | Set _ | SetIndex _ | Print _ | Expr _ -> false
+
 let check_def env (name, params, body) =
   let fn_ty = lookup_fun env name in
   let param_tys, ret_ty =
@@ -294,9 +377,13 @@ let check_def env (name, params, body) =
     List.fold_left2 (fun acc param ty -> StrMap.add param ty acc) StrMap.empty
       params param_tys
   in
-  ignore (check_block env locals ~allow_globals:false ~ret_ty:(Some ret_ty) body)
+  ignore (check_block env locals ~allow_globals:false ~ret_ty:(Some ret_ty) body);
+  if not (List.exists stmt_has_return body) then unify ret_ty TNone
 
 let check_program (defs, stmts) =
   let env = List.fold_left register_function empty_env defs in
   List.iter (check_def env) defs;
-  ignore (check_block env StrMap.empty ~allow_globals:true ~ret_ty:None stmts)
+  let env, _locals =
+    check_block env StrMap.empty ~allow_globals:true ~ret_ty:None stmts
+  in
+  env

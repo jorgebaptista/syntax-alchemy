@@ -8,6 +8,7 @@ and stmt =
   | Set of string * expr (* set x = e *)
   | SetIndex of expr * expr * expr (* set a[i] = e *)
   | Print of expr (* print e *)
+  | Expr of expr (* evaluate expression, discard result *)
   | If of expr * stmt list * stmt list (* if e then stmts else stmts *)
   | While of expr * stmt list (* while e do stmts done *)
   | For of string * expr * stmt list (* for x in e do stmts done *)
@@ -16,6 +17,8 @@ and stmt =
 and expr =
   | Cst of int (* integer constant *)
   | Bool of bool (* boolean constant: true, false *)
+  | Str of string (* string constant *)
+  | NoneLit (* none constant *)
   | Var of string (* variable *)
   | Binop of binop * expr * expr (* binary operation *)
   | Unop of unop * expr (* unary operation *)
@@ -23,6 +26,7 @@ and expr =
   | IfExpr of expr * expr * expr (* if e1 then e2 else e3 (expression) *)
   | Call of string * expr list (* function call f(e1, e2, ...) *)
   | ListLit of expr list (* [e1, e2, ...] *)
+  | ListRange of expr (* list(range(e)) *)
   | Get of expr * expr (* e1[e2] *)
   | Len of expr (* len(e) *)
 
@@ -31,6 +35,7 @@ and binop =
   | Sub
   | Mul
   | Div (* arithmetic *)
+  | Mod
   | Eq
   | Neq
   | Lt

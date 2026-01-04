@@ -8,12 +8,14 @@ Compiler from Arith mini-language to x86-64 assembly.
 
 A simple imperative language with:
 
-- [Arithmetic](docs/features/arithmetic.md) - integers, +, -, *, /
+- [Arithmetic](docs/features/arithmetic.md) - integers, +, -, *, /, %
 - [Variables](docs/features/variables.md) - global and local
 - [Booleans](docs/features/booleans.md) - comparisons and logical ops
+- [Strings](docs/features/strings.md) - literals, concatenation, comparisons
 - [Control flow](docs/features/control-flow.md) - if/else, while, for loops
-- [Lists](docs/features/lists.md) - literals, indexing, len
+- [Lists](docs/features/lists.md) - literals, indexing, len, concat, range
 - [Functions](docs/features/functions.md) - def/return, calls, recursion
+- [None](docs/features/none.md) - literal and default returns
 - `print` - output values
 
 **Example program:**

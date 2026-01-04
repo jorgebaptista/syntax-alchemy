@@ -14,6 +14,23 @@ List literals, indexing, length, and element assignment.
 set a = [1, 2, 3]
 ```
 
+## Type Rules
+
+List elements must have the same type (lists are homogeneous).
+
+## Concatenation
+
+Use `+` to concatenate two lists (creates a new list).
+
+**Example:**
+```
+set a = [1, 2]
+set b = [3]
+set c = a + b
+print c
+```
+Output: `[1, 2, 3]`
+
 ## Indexing
 
 Access an element by index (0-based).
@@ -41,6 +58,22 @@ len(e)
 **Example:**
 ```
 print len(a)
+```
+Output: `3`
+
+## Ranges
+
+Build a list of integers from `0` to `n-1` using `list(range(n))`.
+
+**Syntax:**
+```
+list(range(n))
+```
+
+**Example:**
+```
+set r = list(range(4))
+print r[3]
 ```
 Output: `3`
 

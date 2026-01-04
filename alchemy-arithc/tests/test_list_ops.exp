@@ -1,0 +1,17 @@
+# List concatenation, comparison, printing, and expression statements
+
+def set_first(a) (
+  set a[0] = 42
+)
+
+set a = [1, 2]
+set b = [3]
+set c = a + b
+print c
+print len(c)
+print c[2]
+set_first(c)
+print c
+print [1] < [2]
+print [1, 2] < [1, 2, 0]
+print [[1, 2], [3]] == [[1, 2], [3]]

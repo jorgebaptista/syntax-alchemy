@@ -1,0 +1,8 @@
+# String literals, concatenation, and comparisons
+print "hello"
+print "foo" + "bar"
+print "a" < "b"
+print "ab" >= "ab"
+print "abc" <= "ab"
+print "x" == "x"
+print "x" != "y"

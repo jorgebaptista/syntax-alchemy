@@ -1,6 +1,2 @@
-# Truthiness in conditions
-if 0 then print 1 else print 0
-if [] then print 1 else print 0
-if "" then print 1 else print 0
-if None then print 1 else print 0
-if 2 then print 1 else print 0
+# Type error: condition must be boolean
+if 1 then print 1 else print 0

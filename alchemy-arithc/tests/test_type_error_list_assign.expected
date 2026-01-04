@@ -1,1 +1,1 @@
-[True, 2]
+Type Error: cannot unify int with bool

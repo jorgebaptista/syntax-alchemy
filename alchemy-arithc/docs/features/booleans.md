@@ -1,6 +1,6 @@
 # Booleans & Logical Operations
 
-Boolean values, comparisons, and truthiness-based logic.
+Boolean values, comparisons, and boolean logic.
 
 ## Boolean Literals
 
@@ -9,27 +9,21 @@ Boolean values, comparisons, and truthiness-based logic.
 
 Printing booleans shows `True` or `False`.
 
-## Truthiness
+## Conditions
 
-Conditions and boolean operators use Python-style truthiness:
-
-- `None`, `false`, `0`, `""`, and `[]` are false
-- everything else is true
+`if`, `while`, and boolean operators require a boolean condition. There is no
 
 ## Comparison Operators
 
-Comparisons return booleans and work for integers, booleans, strings, lists, and
-`None`. When comparing different types, the order is:
-
-```
-None < bool < int < string < list
-```
+Comparisons return booleans. Equality (`==`, `!=`) requires both operands to
+have the same type. Ordering (`<`, `<=`, `>`, `>=`) is defined for integers,
+strings, and lists with matching element types.
 
 List comparisons are lexicographic (element by element).
 
 ## Logical Operators
 
-- `and` / `or` short-circuit and return one of their operands
+- `and` / `or` short-circuit and return a boolean
 - `not` returns a boolean (`True` or `False`)
 
 ## Examples
@@ -49,12 +43,6 @@ print true or false
 print not true
 ```
 Output: `False`, `True`, `False`
-
-**Short-circuit evaluation:**
-```
-print not true and 1 / 0 == 0
-```
-Output: `False` (doesn't evaluate `1/0` because left side is false)
 
 See [test_booleans.exp](../../tests/test_booleans.exp) and
 [test_logical.exp](../../tests/test_logical.exp) for more examples.

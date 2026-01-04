@@ -100,6 +100,10 @@ let () =
         "Type Error: wrong number of arguments for %s (expected %d, got %d)@."
         name expected actual;
       exit 1
+  | Typecheck.TypeError (t1, t2) ->
+      eprintf "Type Error: cannot unify %a with %a@." Typecheck.pp_typ t1
+        Typecheck.pp_typ t2;
+      exit 1
   | Compile.VarUndef s ->
       (* Erro derivado de um mau uso de variável durante a compilação *)
       eprintf "Compilation Error: The variable %s is not definded@." s;

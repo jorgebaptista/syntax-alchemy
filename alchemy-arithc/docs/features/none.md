@@ -15,8 +15,4 @@ Functions that reach the end without a `return` evaluate to `None`.
 
 ## Comparisons
 
-`None` can be compared with `==` and `!=`.
-
-## Truthiness
-
-`None` is false in conditionals and boolean operators.
+`None` can be compared with `==` and `!=` (with another `None`).

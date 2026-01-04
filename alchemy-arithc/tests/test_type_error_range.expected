@@ -1,1 +1,1 @@
-error: range expects an integer
+Type Error: cannot unify bool with int

@@ -33,7 +33,6 @@ Output: `True`
 
 `print` outputs the string value without quotes.
 
-## Runtime Errors
+## Type Errors
 
-Only string + string is supported. Other combinations raise
-`error: Unsupported operand types`.
+Only string + string is supported. Other combinations are type errors.

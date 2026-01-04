@@ -4,7 +4,7 @@ Conditionals and loops for program control.
 
 ## If-Then-Else (Statement)
 
-Execute statements based on condition. Conditions use truthiness (see
+Execute statements based on condition. Conditions must be boolean (see
 [booleans](booleans.md)).
 
 **Syntax:**
@@ -44,7 +44,7 @@ Output: `20`
 
 ## While Loops
 
-Repeat statements while condition is true. Conditions use truthiness (see
+Repeat statements while condition is true. Conditions must be boolean (see
 [booleans](booleans.md)).
 
 **Syntax:**

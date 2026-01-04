@@ -1,2 +1,2 @@
-# Runtime error: string + int
+# Type error: string + int
 print "hi" + 1

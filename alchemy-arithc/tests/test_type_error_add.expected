@@ -1,1 +1,1 @@
-error: Unsupported operand types
+Type Error: cannot unify bool with int

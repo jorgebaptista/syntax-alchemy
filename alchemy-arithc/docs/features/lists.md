@@ -16,8 +16,7 @@ set a = [1, 2, 3]
 
 ## Types
 
-Lists can hold mixed types. You can replace elements with values of a different
-type.
+List elements must have the same type (lists are homogeneous).
 
 ## Concatenation
 
@@ -94,14 +93,17 @@ print a[1]
 ```
 Output: `10`
 
-## Runtime Errors
+## Errors
 
-These operations raise runtime errors on invalid inputs:
+These operations raise **type errors** on invalid inputs:
 
 - `len` on a non-list
 - indexing with a non-list or non-integer index
-- out-of-range indexes
 - assignment with a non-list or non-integer index
+
+These operations raise **runtime errors**:
+
+- out-of-range indexes
 
 See [test_lists.exp](../../tests/test_lists.exp) for more examples.
 

@@ -1,6 +1,9 @@
+(* Pretty-printing *)
 open Format
+(* Import do AST para usar diretamente *)
 open Ast
 
+(* Tipos estáticos que o compilador reconhece *)
 type typ =
   | TInt
   | TBool
@@ -10,21 +13,30 @@ type typ =
   | TFun of typ list * typ
   | TVar of tvar
 
-and tvar = { id : int; mutable def : typ option }
+(* Variável de tipo desconhecido que começa por ser indefinida.
+   Esta é resolvida durante o typechecking com unificação com outros tipos. *)  
+and tvar = { 
+  id : int;                 (* identificador único da variável de tipo *)
+  mutable def : typ option; (* definição do tipo, se já tiver sido inferido *)
+}
 
-exception TypeError of typ * typ
-exception VarUndef of string
-exception FuncUndef of string
-exception FuncRedef of string
-exception ReturnOutside
-exception ArityMismatch of string * int * int
+(* Lista de exceções *)
+exception TypeError of typ * typ                  (* Esperava um tipo mas recebeu outro *)
+exception VarUndef of string                      (* Variável não definida *)
+exception FuncUndef of string                     (* Função não definida *)
+exception FuncRedef of string                     (* Redfinição de uma função *)
+exception ReturnOutside                           (* return fora da função *)
+exception ArityMismatch of string * int * int     (* Função chamada com número errado de args *)
 
+(* Módulo auxiliar para tratar variáveis de tipo (tvar) como chaves de Set/Map.
+   Define comparação/igualdade pelo id e fornece um gerador de variáveis frescas. *)
 module V = struct
   type t = tvar
 
   let compare v1 v2 = Stdlib.compare v1.id v2.id
   let equal v1 v2 = v1.id = v2.id
 
+  (* Cria uma variável de tipo "fresca" (id novo, ainda sem definição). *)
   let create =
     let r = ref 0 in
     fun () ->
@@ -32,16 +44,28 @@ module V = struct
       { id = !r; def = None }
 end
 
+(* Estruturas auxiliares:
+   - StrMap: mapas indexados por nomes (strings), usados para variáveis/funções
+   - Vset/Vmap: conjuntos e mapas de variáveis de tipo (tvar), usados na generalização/instanciação *)
 module StrMap = Map.Make (String)
 module Vset = Set.Make (V)
 module Vmap = Map.Make (V)
 
+(* Esquema de tipo (type scheme):
+   vars = variáveis de tipo generalizáveis (polimorfismo)
+   typ  = tipo associado à variável/função *)
 type schema = { vars : Vset.t; typ : typ }
 
+(* Esquema monomórfico: sem variáveis generalizadas *)
 let mono_schema typ = { vars = Vset.empty; typ }
 
+(* Ambiente de typechecking (environment):
+   - globals: variáveis globais com esquemas
+   - functions: assinaturas das funções (TFun ...) *)
 type env = { globals : schema StrMap.t; functions : typ StrMap.t }
 
+(* Resolve "a cabeça" de um tipo: segue TVar.def até chegar a um tipo final.
+   Faz também compressão de caminho (path compression) para acelerar unificações futuras. *)
 let rec head = function
   | TVar v -> (
       match v.def with
@@ -52,6 +76,8 @@ let rec head = function
           h)
   | t -> t
 
+  (* Normaliza um tipo para uma forma canónica, resolvendo todas as variáveis de tipo
+   já definidas (útil para mensagens de erro e comparações). *)
 let rec canon t =
   match head t with
   | TInt -> TInt
@@ -62,6 +88,7 @@ let rec canon t =
   | TFun (args, ret) -> TFun (List.map canon args, canon ret)
   | TVar v -> TVar v
 
+(* Pretty-printer para tipos, usado em mensagens de erro e debugging. *)
 let rec pp_typ fmt = function
   | TInt -> fprintf fmt "int"
   | TBool -> fprintf fmt "bool"
@@ -88,8 +115,11 @@ and pp_tvar fmt = function
   | { def = None; id } -> fprintf fmt "'%d" id
   | { def = Some t; id } -> fprintf fmt "@[<1>('%d := %a)@]" id pp_typ t
 
+(* Lança um erro de tipos após normalizar (canon) os dois tipos envolvidos. *)
 let type_error t1 t2 = raise (TypeError (canon t1, canon t2))
 
+(* Occur-check: verifica se uma variável de tipo v aparece dentro do tipo t.
+   Evita tipos infinitos do género α = list[α]. *)
 let rec occur v t =
   match head t with
   | TVar v' -> V.equal v v'
@@ -97,6 +127,8 @@ let rec occur v t =
   | TList t' -> occur v t'
   | TFun (args, ret) -> List.exists (occur v) args || occur v ret
 
+(* Unificação: força dois tipos a serem compatíveis, criando ligações em TVar.def
+   quando necessário. É o núcleo do Algoritmo W. *)
 let rec unify t1 t2 =
   match (head t1, head t2) with
   | TInt, TInt -> ()
@@ -113,12 +145,16 @@ let rec unify t1 t2 =
       if occur v t then type_error (TVar v) t else v.def <- Some t
   | t1', t2' -> type_error t1' t2'
 
+(* Cria um tipo variável fresco (TVar ...) para inferência. *)  
 let fresh_var () = TVar (V.create ())
 
+(* Garante que "actual" é compatível com "expected".
+   Unifica e devolve o tipo esperado (útil como "assert de tipos"). *)
 let expect actual expected =
   unify actual expected;
   expected
 
+(* Calcula o conjunto de variáveis de tipo livres (free type variables) de um tipo. *)  
 let rec fvars t =
   match head t with
   | TInt | TBool | TString | TNone -> Vset.empty
@@ -139,10 +175,14 @@ let env_fvars ~allow_globals env locals =
   if allow_globals then Vset.union locals_fvars (fvars_bindings env.globals)
   else locals_fvars
 
+(* Generaliza um tipo para um esquema: escolhe quais variáveis de tipo podem ser
+   polimórficas (não aparecem no ambiente atual). *)  
 let generalize ~allow_globals env locals typ =
   let vars = Vset.diff (fvars typ) (env_fvars ~allow_globals env locals) in
   { vars; typ }
 
+(* Instancia um esquema polimórfico, substituindo cada variável generalizada por
+   uma variável fresca. Isto evita "partilhar" a mesma TVar entre usos diferentes. *)  
 let instantiate schema =
   let subs = ref Vmap.empty in
   let rec inst t =
@@ -167,11 +207,14 @@ let instantiate schema =
 
 let empty_env = { globals = StrMap.empty; functions = StrMap.empty }
 
+(* Procura assinatura de função no ambiente. *)
 let lookup_fun env name =
   match StrMap.find_opt name env.functions with
   | Some ty -> ty
   | None -> raise (FuncUndef name)
 
+(* Procura variável (locals primeiro; depois globals se permitido),
+   instanciando o esquema antes de devolver o tipo. *)  
 let lookup_var ~allow_globals env locals name =
   match StrMap.find_opt name locals with
   | Some schema -> instantiate schema
@@ -182,6 +225,9 @@ let lookup_var ~allow_globals env locals name =
         | None -> raise (VarUndef name)
       else raise (VarUndef name)
 
+(* Heurística: se o tipo ainda for variável (TVar), assume int como default.
+   Isto ajuda a resolver ambiguidades em alguns casos de inferência,
+   seguindo o comportamento esperado nos testes fornecidos. *)     
 let default_int t =
   match head t with
   | TVar v ->
@@ -189,6 +235,7 @@ let default_int t =
       TInt
   | t' -> t'
 
+(* Valida tipos para operações específicas. *)  
 let ensure_addable t =
   match head (default_int t) with
   | TInt -> TInt
@@ -204,6 +251,8 @@ let rec ensure_orderable t =
       TBool
   | t' -> type_error t' TInt
 
+(* Inferência de tipos para expressões.
+   Devolve o tipo inferido e aplica unificações conforme os operadores/forma da expressão. *)  
 let rec infer_expr env locals ~allow_globals = function
   | Cst _ -> TInt
   | Bool _ -> TBool
@@ -305,6 +354,7 @@ let rec infer_expr env locals ~allow_globals = function
       unify t1 t2;
       t1
 
+(* Junta ambiente antes/depois de um loop, unificando variáveis modificadas. *)
 let merge_branch_maps before then_map else_map =
   let module StrSet = Set.Make (String) in
   let keys =
@@ -339,6 +389,8 @@ let merge_loop_maps before body_map =
     body_map;
   before
 
+(* Verificação de statements: atualiza o ambiente local/global e valida regras
+   (ex: tipo do return, tipos de condições em if/while, etc). *)
 let rec check_stmt env locals ~in_function ~allow_globals ret_type = function
   | Set (name, e) ->
       let t = infer_expr env locals ~allow_globals e in
@@ -406,6 +458,7 @@ let rec check_stmt env locals ~in_function ~allow_globals ret_type = function
       ignore (expect t ret_type);
       (env, locals)
 
+(* Verifica uma lista de statements sequencialmente, acumulando alterações ao ambiente local. *)
 and check_block env locals ~in_function ~allow_globals ret_type stmts =
   List.fold_left
     (fun (_env, locals) stmt ->
@@ -441,6 +494,10 @@ let check_def env (name, params, body) =
       if not (List.exists stmt_has_return body) then unify ret_type TNone
   | _ -> assert false
 
+(* Ponto de entrada do typechecker:
+   1) Regista assinaturas das funções
+   2) Verifica cada definição
+   3) Verifica o bloco principal e guarda os globals inferidos *)      
 let check_program (defs, stmts) =
   let env = List.fold_left register_function empty_env defs in
   List.iter (check_def env) defs;

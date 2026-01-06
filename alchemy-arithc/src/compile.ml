@@ -1,4 +1,14 @@
-(* Produção de código para a linguagem Arith (valores dinâmicos) *)
+(* Geração de código (backend): traduz o AST tipado para assembly x86-64 (sintaxe AT&T).
+   Pipeline geral do compilador:
+   1) Parser: constrói o AST (árvore sintática abstracta).
+   2) Typechecker: valida/inferre tipos e rejeita programas inválidos.
+   3) Backend (este ficheiro): gera assembly e junta um pequeno runtime (prints + erros).
+
+   Representação em runtime:
+   - Todos os valores (int/bool/none/string/list) cabem num único "value" de 64 bits.
+   - Usamos *bit tagging*: os 3 bits menos significativos guardam a "tag" do tipo.
+   - Antes de certas operações, o código verifica tags para garantir segurança em runtime.
+*)
 
 open Format
 open X86_64
@@ -6,29 +16,61 @@ open Ast
 
 exception VarUndef of string
 
+(* Contador global para gerar labels únicos (evita colisões em if/while/for/strings, etc). *)
 let label_counter = ref 0
 
+(* Gera labels únicos do tipo "<prefix><n>". *)
 let new_label prefix =
   let n = !label_counter in
   incr label_counter;
   prefix ^ string_of_int n
 
+  
+(* Convenção: labels de funções começam por "fun_" para não colidir com labels internos. *)
 let func_label name = "fun_" ^ name
+
+(* Ambiente global (variáveis globais):
+   - guardamos nomes em genv para depois reservar espaço na secção .data
+   - cada global fica como um "slot" de 8 bytes (dquad), inicializado a None *)
 let genv : (string, unit) Hashtbl.t = Hashtbl.create 17
 
 module StrMap = Map.Make (String)
 
+(* Alinhamento da stack a 16 bytes (ABI x86-64):
+   - muitas funções C (printf/malloc/strcmp/...) assumem esse alinhamento.
+   - este helper garante que o espaço reservado no frame mantém o alinhamento correto. *)
 let align_frame_size size = if size mod 16 = 8 then size + 8 else size
 
+(* Reserva um temporário no stack frame (usado em expressões maiores, ex: range/for).
+   Retorna o offset negativo relativo a rbp. *)
 let alloc_temp frame_size =
   let ofs = -(!frame_size + 8) in
   frame_size := !frame_size + 8;
   ofs
 
+(* Reserva um "local" (variável) no frame, garantindo que frame_size cresce quando necessário.
+   Retorna (offset, next) onde:
+   - offset: posição no stack (relativa a rbp)
+   - next: próximo offset a usar *)  
 let alloc_local frame_size next =
   if !frame_size = next then frame_size := !frame_size + 8;
   (-next - 8, next + 8)
 
+(* === Representação em runtime (bit tagging) ===
+   Usamos os 3 bits menos significativos (mask = 0b111) como tag.
+
+   Layout (resumo):
+   - int    : (n << 3) | tag_int
+   - bool   : tag_bool_false / tag_bool_true
+   - none   : tag_none
+   - string : ponteiro | tag_string    (ponteiro para bytes C '\0' terminated)
+   - list   : ponteiro alinhado (tag = 0) para bloco:
+             [ len (int64) | elem0 (value) | elem1 (value) | ... ]
+
+   Untagging:
+   - int: sarq 3
+   - ptr (listas/strings): limpar LSB com andq -8
+*)
 let tag_mask = 7
 let tag_int = 1
 let tag_bool = 2
@@ -44,6 +86,10 @@ let str_none_label = ".Snone"
 let str_lbrack_label = ".Slbrack"
 let str_rbrack_label = ".Srbrack"
 let str_comma_label = ".Scomma"
+
+(* Labels de erro consumidos pelo runtime_error:
+   - quando algo inválido é detectado (ex: divisão por zero),
+     saltamos para runtime_error com a mensagem adequada. *)
 let err_div_zero_label = ".Serr_div_zero"
 let err_unsupported_label = ".Serr_unsupported"
 let err_len_label = ".Serr_len"
@@ -53,9 +99,14 @@ let err_index_label = ".Serr_index"
 let err_index_range_label = ".Serr_index_range"
 let err_list_assign_label = ".Serr_list_assign"
 let err_for_label = ".Serr_for"
+
+(* Tabelas para deduplicar literais string:
+   - cada literal aparece 1x na secção .data com um label.
+   - em código, empilhamos o ponteiro tagged (ptr | tag_string). *)
 let string_labels : (string, string) Hashtbl.t = Hashtbl.create 17
 let string_data : (string * string) list ref = ref []
 
+(* Regista (ou reaproveita) um label para a literal s. *)
 let add_string_literal s =
   match Hashtbl.find_opt string_labels s with
   | Some lbl -> lbl
@@ -65,15 +116,23 @@ let add_string_literal s =
       string_data := (lbl, s) :: !string_data;
       lbl
 
+(* call_aligned:
+   Garante alinhamento da stack antes de chamar funções externas (ABI).
+   Usa 'depth' = nº de valores empilhados (para saber se precisa de padding). *)      
 let call_aligned depth label =
   let pad = if depth mod 2 = 0 then 0 else 1 in
   let code_pad = if pad = 1 then subq (imm 8) !%rsp else nop in
   let code_unpad = if pad = 1 then addq (imm 8) !%rsp else nop in
   code_pad ++ call label ++ code_unpad
 
+(* runtime_error_call:
+   Chama runtime_error(msg) para imprimir mensagem e terminar o programa. *)  
 let runtime_error_call depth msg_label =
   leaq (lab msg_label) rdi ++ call_aligned depth "runtime_error"
 
+(* check_tag:
+   Verifica se reg tem a tag esperada; caso contrário, chama runtime_error.
+   Exemplo: check_tag rax tag_int err_unsupported_label depth *)
 let check_tag reg tag msg_label depth =
   let lbl_ok = new_label ".Ltag_ok" in
   movq !%reg !%rcx
@@ -83,6 +142,10 @@ let check_tag reg tag msg_label depth =
   ++ runtime_error_call depth msg_label
   ++ label lbl_ok
 
+(* tag_order:
+   Converte um value numa ordem de comparação por tipo:
+   none < bool < int < string < list < desconhecido
+   (usado no compare_value quando os tipos diferem). *)  
 let tag_order reg =
   let lbl_none = new_label ".Ltag_none" in
   let lbl_bool = new_label ".Ltag_bool" in
@@ -113,6 +176,7 @@ let tag_order reg =
   ++ movq (imm 4) !%reg
   ++ label lbl_done
 
+(* Helpers de tagging/untagging usados durante a geração de assembly. *)  
 let tag_int_rax = shlq (imm 3) !%rax ++ orq (imm tag_int) !%rax
 let untag_int_rax = sarq (imm 3) !%rax
 let untag_int_rdi = sarq (imm 3) !%rdi
@@ -120,6 +184,7 @@ let untag_ptr_rax = andq (imm (-8)) !%rax
 let untag_ptr_rdi = andq (imm (-8)) !%rdi
 let untag_ptr_rsi = andq (imm (-8)) !%rsi
 
+(* Helpers para empilhar valores já tagged na stack. *)
 let push_int i =
   movq (imm i) !%rax
   ++ shlq (imm 3) !%rax
@@ -136,6 +201,16 @@ let push_string s =
   ++ orq (imm tag_string) !%rax
   ++ pushq !%rax
 
+(* compile_expr:
+   Compila uma expressão para código que deixa o resultado *tagged* no topo da stack.
+
+   Parâmetros principais:
+   - frame_size: ref com tamanho atual do stack frame (para reservar temporários)
+   - allow_globals: se true, permite ler globais (main). Em funções é false.
+   - env: mapa var -> offset (variáveis locais/parâmetros)
+   - next: próximo offset a usar para reservar novas vars locais (let/assign)
+   - depth: nº de valores actualmente empilhados (para alinhamento em calls)
+*)  
 let rec compile_expr ~frame_size ~allow_globals env next depth expr =
   let rec comprec env next depth = function
     | Cst i -> push_int i
@@ -404,6 +479,12 @@ let compile_print ~frame_size ~allow_globals env next expr =
   compile_expr ~frame_size ~allow_globals env next 0 expr
   ++ popq rdi ++ call "print_value" ++ call "print_newline"
 
+
+(* === Compilação de statements no "main" ===
+   No main, variáveis atribuídas com 'set x = ...' são tratadas como globais:
+   - são registadas em genv
+   - são emitidas na secção .data como slots inicializados a None
+*)  
 let rec compile_instr_main frame_size = function
   | Set (x, e) ->
       if not (Hashtbl.mem genv x) then Hashtbl.add genv x ();
@@ -480,6 +561,13 @@ and compile_block_main frame_size stmts =
     (fun code stmt -> code ++ compile_instr_main frame_size stmt)
     nop stmts
 
+(* === Compilação de statements dentro de funções ===
+   Dentro de funções, as variáveis vivem no stack frame (locais/parâmetros).
+   compile_stmt_fn devolve:
+   - o código do statement
+   - o env atualizado (novas variáveis locais passam a ter offset)
+   - o next atualizado (próxima posição livre no frame)
+*)    
 let rec compile_stmt_fn frame_size ret_label env next = function
   | Set (x, e) ->
       let code =
@@ -613,6 +701,11 @@ and compile_block_fn frame_size ret_label env next stmts =
       (code ++ code_stmt, env, next))
     (nop, env, next) stmts
 
+(* Compila uma função:
+   - Cria um label de retorno (ret_label) para saltos de 'return'
+   - Constrói env inicial com parâmetros (offsets positivos a partir de rbp)
+   - Reserva stack frame para variáveis locais/temporários
+   - Se não houver return explícito, devolve None por defeito *)    
 let compile_function (name, params, body) =
   let frame_size = ref 0 in
   let ret_label = new_label (".Lret_" ^ name) in
@@ -634,6 +727,13 @@ let compile_function (name, params, body) =
   ++ movq (imm tag_none) !%rax
   ++ label ret_label ++ movq !%rbp !%rsp ++ popq rbp ++ ret
 
+(* Rotinas "runtime" incluídas no output:
+   - print_int / print_string / print_newline: wrappers de printf/putchar
+   - runtime_error: imprime msg e termina (exit(1))
+   - is_true: semântica de truthiness (int!=0, bool True, string != "", list len>0, none é false)
+   - compare_value: comparação total (suporta tipos diferentes via tag_order)
+   - print_value: imprime qualquer value (inclui listas recursivamente)
+   - string_concat / list_concat: concatenação para o operador Add com strings e listas *)
 let print_int_text =
   label "print_int" ++ pushq !%rbp ++ movq !%rsp !%rbp ++ movq !%rdi !%rsi
   ++ leaq (lab fmt_int_label) rdi
@@ -935,6 +1035,11 @@ let list_concat_text =
   ++ movq (ind ~ofs:buf_ofs rbp) !%rax
   ++ movq !%rbp !%rsp ++ popq rbp ++ ret
 
+(* compile_program:
+   - limpa estado global (labels, genv, literais)
+   - compila todas as funções + o main
+   - constrói secção .text (código) e .data (strings, mensagens de erro, globais)
+   - imprime o assembly para o ficheiro de saída (ofile) *)
 let compile_program (defs, stmts) ofile =
   label_counter := 0;
   Hashtbl.clear genv;

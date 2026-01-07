@@ -1,5 +1,6 @@
 (* Pretty-printing *)
 open Format
+
 (* Import do AST para usar diretamente *)
 open Ast
 
@@ -14,19 +15,22 @@ type typ =
   | TVar of tvar
 
 (* Variável de tipo desconhecido que começa por ser indefinida.
-   Esta é resolvida durante o typechecking com unificação com outros tipos. *)  
-and tvar = { 
-  id : int;                 (* identificador único da variável de tipo *)
+   Esta é resolvida durante o typechecking com unificação com outros tipos. *)
+and tvar = {
+  id : int; (* identificador único da variável de tipo *)
   mutable def : typ option; (* definição do tipo, se já tiver sido inferido *)
 }
 
 (* Lista de exceções *)
-exception TypeError of typ * typ                  (* Esperava um tipo mas recebeu outro *)
-exception VarUndef of string                      (* Variável não definida *)
-exception FuncUndef of string                     (* Função não definida *)
-exception FuncRedef of string                     (* Redfinição de uma função *)
-exception ReturnOutside                           (* return fora da função *)
-exception ArityMismatch of string * int * int     (* Função chamada com número errado de args *)
+exception TypeError of typ * typ (* Esperava um tipo mas recebeu outro *)
+exception VarUndef of string (* Variável não definida *)
+exception FuncUndef of string (* Função não definida *)
+exception FuncRedef of string (* Redfinição de uma função *)
+exception ReturnOutside (* return fora da função *)
+
+exception
+  ArityMismatch of
+    string * int * int (* Função chamada com número errado de args *)
 
 (* Módulo auxiliar para tratar variáveis de tipo (tvar) como chaves de Set/Map.
    Define comparação/igualdade pelo id e fornece um gerador de variáveis frescas. *)
@@ -76,7 +80,7 @@ let rec head = function
           h)
   | t -> t
 
-  (* Normaliza um tipo para uma forma canónica, resolvendo todas as variáveis de tipo
+(* Normaliza um tipo para uma forma canónica, resolvendo todas as variáveis de tipo
    já definidas (útil para mensagens de erro e comparações). *)
 let rec canon t =
   match head t with
@@ -145,7 +149,7 @@ let rec unify t1 t2 =
       if occur v t then type_error (TVar v) t else v.def <- Some t
   | t1', t2' -> type_error t1' t2'
 
-(* Cria um tipo variável fresco (TVar ...) para inferência. *)  
+(* Cria um tipo variável fresco (TVar ...) para inferência. *)
 let fresh_var () = TVar (V.create ())
 
 (* Garante que "actual" é compatível com "expected".
@@ -154,7 +158,7 @@ let expect actual expected =
   unify actual expected;
   expected
 
-(* Calcula o conjunto de variáveis de tipo livres (free type variables) de um tipo. *)  
+(* Calcula o conjunto de variáveis de tipo livres (free type variables) de um tipo. *)
 let rec fvars t =
   match head t with
   | TInt | TBool | TString | TNone -> Vset.empty
@@ -176,13 +180,13 @@ let env_fvars ~allow_globals env locals =
   else locals_fvars
 
 (* Generaliza um tipo para um esquema: escolhe quais variáveis de tipo podem ser
-   polimórficas (não aparecem no ambiente atual). *)  
+   polimórficas (não aparecem no ambiente atual). *)
 let generalize ~allow_globals env locals typ =
   let vars = Vset.diff (fvars typ) (env_fvars ~allow_globals env locals) in
   { vars; typ }
 
 (* Instancia um esquema polimórfico, substituindo cada variável generalizada por
-   uma variável fresca. Isto evita "partilhar" a mesma TVar entre usos diferentes. *)  
+   uma variável fresca. Isto evita "partilhar" a mesma TVar entre usos diferentes. *)
 let instantiate schema =
   let subs = ref Vmap.empty in
   let rec inst t =
@@ -214,7 +218,7 @@ let lookup_fun env name =
   | None -> raise (FuncUndef name)
 
 (* Procura variável (locals primeiro; depois globals se permitido),
-   instanciando o esquema antes de devolver o tipo. *)  
+   instanciando o esquema antes de devolver o tipo. *)
 let lookup_var ~allow_globals env locals name =
   match StrMap.find_opt name locals with
   | Some schema -> instantiate schema
@@ -227,7 +231,7 @@ let lookup_var ~allow_globals env locals name =
 
 (* Heurística: se o tipo ainda for variável (TVar), assume int como default.
    Isto ajuda a resolver ambiguidades em alguns casos de inferência,
-   seguindo o comportamento esperado nos testes fornecidos. *)     
+   seguindo o comportamento esperado nos testes fornecidos. *)
 let default_int t =
   match head t with
   | TVar v ->
@@ -235,7 +239,7 @@ let default_int t =
       TInt
   | t' -> t'
 
-(* Valida tipos para operações específicas. *)  
+(* Valida tipos para operações específicas. *)
 let ensure_addable t =
   match head (default_int t) with
   | TInt -> TInt
@@ -252,7 +256,7 @@ let rec ensure_orderable t =
   | t' -> type_error t' TInt
 
 (* Inferência de tipos para expressões.
-   Devolve o tipo inferido e aplica unificações conforme os operadores/forma da expressão. *)  
+   Devolve o tipo inferido e aplica unificações conforme os operadores/forma da expressão. *)
 let rec infer_expr env locals ~allow_globals = function
   | Cst _ -> TInt
   | Bool _ -> TBool
@@ -497,7 +501,7 @@ let check_def env (name, params, body) =
 (* Ponto de entrada do typechecker:
    1) Regista assinaturas das funções
    2) Verifica cada definição
-   3) Verifica o bloco principal e guarda os globals inferidos *)      
+   3) Verifica o bloco principal e guarda os globals inferidos *)
 let check_program (defs, stmts) =
   let env = List.fold_left register_function empty_env defs in
   List.iter (check_def env) defs;

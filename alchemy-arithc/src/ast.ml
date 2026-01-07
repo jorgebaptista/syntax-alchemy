@@ -3,7 +3,7 @@
 (* Um programa é representado por:
     - Uma lista de definições de funções no ambiente global (def list)
     - Uma lista de instruções executadas sequencialmente com o corpo principal do programa (stmt list) 
-    Tem como objetivo facilitar a analise semântica e a geração de código nas diferentes fases do compilador*)  
+    Tem como objetivo facilitar a analise semântica e a geração de código nas diferentes fases do compilador*)
 type program = def list * stmt list
 
 (* Uma definição de função é representada por:
@@ -42,13 +42,13 @@ and expr =
   | Get of expr * expr (* e1[e2] *)
   | Len of expr (* len(e) *)
 
-(* Operadores binários *)  
+(* Operadores binários *)
 and binop =
   (* Aritméticos *)
   | Add
   | Sub
   | Mul
-  | Div 
+  | Div
   | Mod
   (* Comparação *)
   | Eq
@@ -61,7 +61,7 @@ and binop =
   | And
   | Or
 
-(* Operadores unários *)  
+(* Operadores unários *)
 and unop =
   (* Negação aritmética *)
   | Neg (* -e *)

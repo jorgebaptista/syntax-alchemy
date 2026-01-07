@@ -1,0 +1,3 @@
+# Normalize line endings for test inputs/outputs
+alchemy-arithc/tests/*.expected text eol=lf
+alchemy-arithc/tests/*.exp text eol=lf

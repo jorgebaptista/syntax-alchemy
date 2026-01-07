@@ -48,6 +48,7 @@ let space = [' ' '\t']
 
 rule token = parse
   | '\n'    { new_line lexbuf; token lexbuf }
+  | '\r'    { token lexbuf }  (* Skip carriage return for Windows compatibility *)
   | "#" [^'\n']* '\n' { new_line lexbuf; token lexbuf }
   | space+  { token lexbuf }
   | ident as id { id_or_kwd id }

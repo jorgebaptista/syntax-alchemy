@@ -1,0 +1,17 @@
+# String concatenation and manipulation
+set greeting = "Hello"
+set name = "World"
+set message = greeting + " " + name
+
+print greeting
+print name
+print message
+
+# Build a longer string
+set part1 = "The"
+set part2 = "quick"
+set part3 = "brown"
+set part4 = "fox"
+set sentence = part1 + " " + part2 + " " + part3 + " " + part4
+
+print sentence

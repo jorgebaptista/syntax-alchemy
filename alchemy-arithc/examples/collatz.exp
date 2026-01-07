@@ -1,0 +1,19 @@
+# Collatz conjecture - count steps to reach 1
+def collatz_steps(n) (
+  set steps = 0
+  
+  while n != 1 do
+    if n % 2 == 0 then
+      set n = n / 2
+    else
+      set n = 3 * n + 1
+    set steps = steps + 1
+  done
+  
+  return steps
+)
+
+# Test various starting numbers
+print collatz_steps(10)
+print collatz_steps(27)
+print collatz_steps(100)

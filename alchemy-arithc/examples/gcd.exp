@@ -1,0 +1,16 @@
+# Greatest Common Divisor - Euclidean algorithm
+def gcd(a, b) (
+  set temp = 0
+  
+  while b != 0 do
+    set temp = b
+    set b = a % b
+    set a = temp
+  done
+  return a
+)
+
+# Test cases
+print gcd(48, 18)
+print gcd(100, 35)
+print gcd(7, 13)

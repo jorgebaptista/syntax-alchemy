@@ -1,0 +1,19 @@
+# Reverse a list (in-place)
+def reverse_list(lst) (
+  set n = len(lst)
+  set i = 0
+  
+  while i < n / 2 do
+    set temp = lst[i]
+    set lst[i] = lst[n - i - 1]
+    set lst[n - i - 1] = temp
+    set i = i + 1
+  done
+  
+  return lst
+)
+
+set numbers = [1, 2, 3, 4, 5]
+print numbers
+set reversed = reverse_list(numbers)
+print reversed

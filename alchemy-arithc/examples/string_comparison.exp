@@ -1,0 +1,17 @@
+# String comparison examples
+set str1 = "apple"
+set str2 = "banana"
+set str3 = "apple"
+
+print str1 == str3
+print str1 != str2
+print str1 < str2
+print str2 > str1
+
+# Concatenation and comparison
+set hello = "Hello"
+set world = "World"
+set combined = hello + " " + world
+
+print combined
+print combined == "Hello World"

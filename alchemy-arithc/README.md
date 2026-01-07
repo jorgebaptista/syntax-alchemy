@@ -41,6 +41,8 @@ Output: `5`
 
 Compiles to x86-64 assembly (AT&T syntax).
 
+**→ See [docs/EXAMPLES.md](docs/EXAMPLES.md) for 21 example programs!**
+
 ## Build & Run
 
 > **Requires:** WSL/Linux with OCaml 5.4.0, opam, dune, menhir, and gcc.

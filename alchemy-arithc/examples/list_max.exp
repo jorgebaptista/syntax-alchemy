@@ -1,0 +1,16 @@
+# Find maximum element in a list
+def find_max(lst) (
+  set max = 0
+  set max = lst[0]
+  for x in lst do
+    if x > max then
+      set max = x
+  done
+  return max
+)
+
+set numbers = [3, 7, 2, 9, 1, 5]
+print find_max(numbers)
+
+set more = [100, 50, 200, 75]
+print find_max(more)

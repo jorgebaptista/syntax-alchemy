@@ -1,0 +1,22 @@
+# Comparison and boolean operations demo
+set x = 10
+set y = 5
+
+print x > y
+print x < y
+print x == y
+print x != y
+print x >= 10
+print y <= 5
+
+# Boolean operations
+print true and true
+print true and false
+print false or true
+print not false
+print not true
+
+# Combined conditions
+print x > 0 and y > 0
+print x < 0 or y < 0
+print not (x == y)

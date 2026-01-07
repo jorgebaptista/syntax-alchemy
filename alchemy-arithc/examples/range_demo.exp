@@ -1,0 +1,18 @@
+# Using list(range(n)) to generate sequences
+set r1 = list(range(5))
+print r1
+
+set r2 = list(range(10))
+print r2
+
+# Sum numbers from 0 to 9
+set sum = 0
+for i in list(range(10)) do
+  set sum = sum + i
+done
+print sum
+
+# Print squares
+for n in list(range(5)) do
+  print n * n
+done

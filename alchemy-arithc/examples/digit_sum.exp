@@ -1,0 +1,16 @@
+# Sum of digits of a number
+def sum_digits(n) (
+  set sum = 0
+  
+  while n > 0 do
+    set sum = sum + n % 10
+    set n = n / 10
+  done
+  
+  return sum
+)
+
+# Test with various numbers
+print sum_digits(123)
+print sum_digits(9876)
+print sum_digits(1000)

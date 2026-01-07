@@ -1,0 +1,14 @@
+# Tower of Hanoi - count number of moves
+def hanoi_moves(n) (
+  if n == 1 then
+    return 1
+  else
+    return 2 * hanoi_moves(n - 1) + 1
+)
+
+# Number of moves for different disk counts
+print hanoi_moves(1)
+print hanoi_moves(2)
+print hanoi_moves(3)
+print hanoi_moves(4)
+print hanoi_moves(5)

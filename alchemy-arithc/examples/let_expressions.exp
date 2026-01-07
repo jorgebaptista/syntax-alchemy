@@ -1,0 +1,16 @@
+# Demonstrating let expressions and local variables
+print (let x = 5 in x * x)
+
+print (let a = 3 in let b = 4 in a * a + b * b)
+
+# Nested let expressions
+print (let x = 10 in 
+        (let y = x + 5 in
+          (let z = y * 2 in z - x)))
+
+# Polymorphic let - same binding, different types
+print (let xs = [] in len(xs + [1]) + len(xs + ["hello"]))
+
+# Let in if expressions
+print (let threshold = 50 in
+        if 100 > threshold then 1 else 0)

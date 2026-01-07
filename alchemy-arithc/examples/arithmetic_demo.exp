@@ -1,0 +1,20 @@
+# Comprehensive arithmetic operations demo
+set a = 10
+set b = 3
+
+print a + b
+print a - b
+print a * b
+print a / b
+print a % b
+
+# Order of operations
+print 2 + 3 * 4
+print (2 + 3) * 4
+print 10 - 2 - 3
+print 100 / 5 / 2
+
+# Negation
+set x = 5
+print -x
+print -(-x)

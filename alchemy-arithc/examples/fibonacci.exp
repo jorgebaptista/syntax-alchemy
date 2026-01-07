@@ -1,0 +1,14 @@
+# Fibonacci sequence - recursive implementation
+def fib(n) (
+  if n <= 1 then
+    return n
+  else
+    return fib(n - 1) + fib(n - 2)
+)
+
+# Print first 10 fibonacci numbers
+set i = 0
+while i < 10 do
+  print fib(i)
+  set i = i + 1
+done

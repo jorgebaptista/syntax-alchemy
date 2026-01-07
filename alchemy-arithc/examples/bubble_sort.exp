@@ -1,0 +1,28 @@
+# Bubble sort implementation
+def bubble_sort(lst) (
+  set n = len(lst)
+  set i = 0
+  set temp = 0
+  
+  while i < n do
+    set j = 0
+    while j < n - i - 1 do
+      if lst[j] > lst[j + 1] then (
+        # Swap elements
+        set temp = lst[j]
+        set lst[j] = lst[j + 1]
+        set lst[j + 1] = temp
+      )
+      set j = j + 1
+    done
+    set i = i + 1
+  done
+  
+  return lst
+)
+
+# Sort a list
+set numbers = [64, 34, 25, 12, 22, 11, 90]
+print numbers
+set sorted = bubble_sort(numbers)
+print sorted

@@ -1,0 +1,15 @@
+# Sum all elements in a list
+def sum_list(lst) (
+  set total = 0
+  for x in lst do
+    set total = total + x
+  done
+  return total
+)
+
+# Create test lists
+set numbers = [1, 2, 3, 4, 5]
+print sum_list(numbers)
+
+set more = [10, 20, 30, 40]
+print sum_list(more)

@@ -1,0 +1,24 @@
+# Check if a number is prime
+def is_prime(n) (
+  set divisor = 2
+  
+  if n <= 1 then
+    return false
+  
+  if n == 2 then
+    return true
+  
+  while divisor * divisor <= n do
+    if n % divisor == 0 then
+      return false
+    set divisor = divisor + 1
+  done
+  
+  return true
+)
+
+# Test some numbers
+print is_prime(2)
+print is_prime(17)
+print is_prime(25)
+print is_prime(97)

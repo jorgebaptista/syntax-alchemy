@@ -25,7 +25,6 @@ let new_label prefix =
   incr label_counter;
   prefix ^ string_of_int n
 
-  
 (* Convenção: labels de funções começam por "fun_" para não colidir com labels internos. *)
 let func_label name = "fun_" ^ name
 
@@ -51,7 +50,7 @@ let alloc_temp frame_size =
 (* Reserva um "local" (variável) no frame, garantindo que frame_size cresce quando necessário.
    Retorna (offset, next) onde:
    - offset: posição no stack (relativa a rbp)
-   - next: próximo offset a usar *)  
+   - next: próximo offset a usar *)
 let alloc_local frame_size next =
   if !frame_size = next then frame_size := !frame_size + 8;
   (-next - 8, next + 8)
@@ -118,7 +117,7 @@ let add_string_literal s =
 
 (* call_aligned:
    Garante alinhamento da stack antes de chamar funções externas (ABI).
-   Usa 'depth' = nº de valores empilhados (para saber se precisa de padding). *)      
+   Usa 'depth' = nº de valores empilhados (para saber se precisa de padding). *)
 let call_aligned depth label =
   let pad = if depth mod 2 = 0 then 0 else 1 in
   let code_pad = if pad = 1 then subq (imm 8) !%rsp else nop in
@@ -126,7 +125,7 @@ let call_aligned depth label =
   code_pad ++ call label ++ code_unpad
 
 (* runtime_error_call:
-   Chama runtime_error(msg) para imprimir mensagem e terminar o programa. *)  
+   Chama runtime_error(msg) para imprimir mensagem e terminar o programa. *)
 let runtime_error_call depth msg_label =
   leaq (lab msg_label) rdi ++ call_aligned depth "runtime_error"
 
@@ -145,7 +144,7 @@ let check_tag reg tag msg_label depth =
 (* tag_order:
    Converte um value numa ordem de comparação por tipo:
    none < bool < int < string < list < desconhecido
-   (usado no compare_value quando os tipos diferem). *)  
+   (usado no compare_value quando os tipos diferem). *)
 let tag_order reg =
   let lbl_none = new_label ".Ltag_none" in
   let lbl_bool = new_label ".Ltag_bool" in
@@ -176,7 +175,7 @@ let tag_order reg =
   ++ movq (imm 4) !%reg
   ++ label lbl_done
 
-(* Helpers de tagging/untagging usados durante a geração de assembly. *)  
+(* Helpers de tagging/untagging usados durante a geração de assembly. *)
 let tag_int_rax = shlq (imm 3) !%rax ++ orq (imm tag_int) !%rax
 let untag_int_rax = sarq (imm 3) !%rax
 let untag_int_rdi = sarq (imm 3) !%rdi
@@ -210,7 +209,7 @@ let push_string s =
    - env: mapa var -> offset (variáveis locais/parâmetros)
    - next: próximo offset a usar para reservar novas vars locais (let/assign)
    - depth: nº de valores actualmente empilhados (para alinhamento em calls)
-*)  
+*)
 let rec compile_expr ~frame_size ~allow_globals env next depth expr =
   let rec comprec env next depth = function
     | Cst i -> push_int i
@@ -479,12 +478,11 @@ let compile_print ~frame_size ~allow_globals env next expr =
   compile_expr ~frame_size ~allow_globals env next 0 expr
   ++ popq rdi ++ call "print_value" ++ call "print_newline"
 
-
 (* === Compilação de statements no "main" ===
    No main, variáveis atribuídas com 'set x = ...' são tratadas como globais:
    - são registadas em genv
    - são emitidas na secção .data como slots inicializados a None
-*)  
+*)
 let rec compile_instr_main frame_size = function
   | Set (x, e) ->
       if not (Hashtbl.mem genv x) then Hashtbl.add genv x ();
@@ -567,7 +565,7 @@ and compile_block_main frame_size stmts =
    - o código do statement
    - o env atualizado (novas variáveis locais passam a ter offset)
    - o next atualizado (próxima posição livre no frame)
-*)    
+*)
 let rec compile_stmt_fn frame_size ret_label env next = function
   | Set (x, e) ->
       let code =
@@ -705,7 +703,7 @@ and compile_block_fn frame_size ret_label env next stmts =
    - Cria um label de retorno (ret_label) para saltos de 'return'
    - Constrói env inicial com parâmetros (offsets positivos a partir de rbp)
    - Reserva stack frame para variáveis locais/temporários
-   - Se não houver return explícito, devolve None por defeito *)    
+   - Se não houver return explícito, devolve None por defeito *)
 let compile_function (name, params, body) =
   let frame_size = ref 0 in
   let ret_label = new_label (".Lret_" ^ name) in
